@@ -1,0 +1,64 @@
+
+
+desde APP
+venv\Scripts\activate
+
+uvicorn app.main:app --reload
+
+
+-----ENPOINTS--------
+
+luego
+Abre tu navegador y entra a:
+http://127.0.0.1:8000
+
+
+para chequear conexión con la BD
+http://127.0.0.1:8000/test-db
+
+para ver el swagger automático
+http://127.0.0.1:8000/docs
+
+para mapear todos mis productos de la BD
+http://127.0.0.1:8000/productos
+
+
+para ver el stock de tienda
+ http://127.0.0.1:8000/stock/bodega
+
+para ver la interfaz creada con HTML
+ http://127.0.0.1:8000/dashboard
+
+
+
+
+
+
+-------------PRUEBAS BASE DE DATOS
+
+---Eliminamos la base de prueba 
+"C:\Program Files\PostgreSQL\18\bin\dropdb.exe" -U postgres DepositoEmmanuel_restore_backup
+
+
+
+Creamos copias para probar los formatos de recuperación
+"C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres DepositoEmmanuel_restore_backup
+
+
+
+COMANDOS PARA RESTAURAR DIRECTAMENTE
+"C:\Program Files\PostgreSQL\18\bin\pg_restore.exe" -U postgres -d DepositoEmmanuel_restore_backup -v "C:\Documentos\7moSemestre\BD2\ProyectoFinal_Entregables\Respaldo1_BD_DE.backup"
+
+
+
+ENTRAR A LA BASE RESTAURADA
+"C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d DepositoEmmanuel_restore_backup
+
+\dt
+SELECT COUNT(*) FROM producto;
+SELECT COUNT(*) FROM compra;
+SELECT COUNT(*) FROM venta;
+SELECT COUNT(*) FROM lote;
+SELECT COUNT(*) FROM inventario_lote;
+
+

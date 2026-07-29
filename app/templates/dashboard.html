@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<h1>Dashboard</h1>
+
+<h2>Productos</h2>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Precio Venta</th>
+        <th>Activo</th>
+    </tr>
+
+    {% for p in productos %}
+    <tr>
+        <td>{{ p.id }}</td>
+        <td>{{ p.nombre }}</td>
+        <td>Q {{ p.precio_venta }}</td>
+        <td>{{ "Sí" if p.activo else "No" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h2>Stock en Bodega</h2>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Producto</th>
+        <th>Stock</th>
+    </tr>
+
+    {% for s in stock %}
+    <tr>
+        <td>{{ s.producto_id }}</td>
+        <td>{{ s.producto }}</td>
+        <td>{{ s.stock }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

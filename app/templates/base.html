@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">Depósito Emmanuel</div>
+    <div class="user-info">Usuario: ADMIN | Rol: Administrador</div>
+</header>
+
+<div class="container">
+    <aside class="sidebar">
+        <ul>
+            <li><a href="/dashboard">📊 Dashboard</a></li>
+            <li><a href="/ventas">🧾 Ventas</a></li>
+            <li><a href="/venta/nueva">➕ Nueva Venta</a></li>
+            <li><a href="/productos-admin">📦 Productos</a></li>
+            <li><a href="/stock-admin">📊 Stock</a></li>
+            <li><a href="/compras-admin">🛒 Compras</a></li>
+            <li><a href="/distribucion-admin">🚚 Distribución</a></li>
+        </ul>
+    </aside>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+</body>
+</html>

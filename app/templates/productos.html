@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Productos{% endblock %}
+
+{% block content %}
+
+<style>
+.productos-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.card {
+    background: #ffffff;
+    border: 1px solid #dcdcdc;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.card h2,
+.card h3 {
+    margin-bottom: 14px;
+    color: #1f2937;
+}
+
+.campo-label {
+    display: block;
+    margin: 10px 0 6px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.campo {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cfcfcf;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+}
+
+.btn {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primario {
+    background: #0ea5a8;
+    color: white;
+}
+
+.btn-secundario {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-danger {
+    background: white;
+    color: #b42318;
+    border: 1px solid #f1c0c0;
+}
+
+.btn-editar {
+    background: white;
+    color: #0c63e7;
+    border: 1px solid #bcd7ff;
+}
+
+.tabla-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tabla-productos {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-productos th,
+.tabla-productos td {
+    border: 1px solid #e5e7eb;
+    padding: 10px;
+    text-align: center;
+}
+
+.tabla-productos th {
+    background: #f9fafb;
+    color: #374151;
+}
+
+.tabla-productos td.nombre-col {
+    text-align: left;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.badge-activo {
+    background: #d1fadf;
+    color: #05603a;
+}
+
+.badge-inactivo {
+    background: #fde2e1;
+    color: #b42318;
+}
+
+.mensaje {
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.mensaje-error {
+    background: #fef3f2;
+    color: #b42318;
+    border: 1px solid #fecdca;
+}
+
+.mensaje-ok {
+    background: #ecfdf3;
+    color: #027a48;
+    border: 1px solid #abefc6;
+}
+
+.oculto {
+    display: none;
+}
+
+.resumen-productos {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.resumen-badge {
+    background: #f3f4f6;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: #374151;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+@media (max-width: 1000px) {
+    .productos-layout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="productos-layout">
+
+    <!-- IZQUIERDA -->
+    <section>
+        <div id="mensaje" class="mensaje oculto"></div>
+
+        <div class="card">
+            <div class="tabla-header">
+                <h2>Productos</h2>
+                <input
+                    type="text"
+                    id="buscarProducto"
+                    class="campo"
+                    placeholder="Buscar producto..."
+                    style="max-width:300px;"
+                >
+            </div>
+
+            <table class="tabla-productos" id="tablaProductos">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Compra</th>
+                        <th>Venta</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="resumen-productos">
+                <span class="resumen-badge">Total: <strong id="resumenTotal">0</strong></span>
+                <span class="resumen-badge">Activos: <strong id="resumenActivos">0</strong></span>
+                <span class="resumen-badge">Inactivos: <strong id="resumenInactivos">0</strong></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- DERECHA -->
+    <aside>
+        <div class="card">
+            <h3 id="tituloFormulario">Nuevo producto</h3>
+
+            <label class="campo-label">Nombre</label>
+            <input type="text" id="nombre" class="campo" placeholder="Nombre del producto">
+
+            <label class="campo-label">Precio compra</label>
+            <input type="number" id="precio_compra" class="campo" step="0.01" min="0" placeholder="0.00">
+
+            <label class="campo-label">Precio venta</label>
+            <input type="number" id="precio_venta" class="campo" step="0.01" min="0" placeholder="0.00">
+
+            <div class="form-actions">
+                <button id="btnGuardarProducto" class="btn btn-primario" style="flex:1;">
+                    Guardar
+                </button>
+                <button id="btnNuevoProducto" class="btn btn-secundario" style="flex:1;">
+                    Nuevo
+                </button>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<script id="productos-data" type="application/json">
+{{ productos_json | tojson }}
+</script>
+
+<script>
+let productosData = []
+let productoEditandoId = null
+
+function $(id) {
+    return document.getElementById(id)
+}
+
+function mostrarMensaje(texto, tipo = "error") {
+    const div = $("mensaje")
+    div.className = "mensaje"
+    div.classList.remove("oculto", "mensaje-error", "mensaje-ok")
+
+    if (tipo === "ok") div.classList.add("mensaje-ok")
+    else div.classList.add("mensaje-error")
+
+    div.textContent = texto
+
+    setTimeout(() => {
+        div.classList.add("oculto")
+    }, 3000)
+}
+
+function limpiarFormulario() {
+    productoEditandoId = null
+    $("tituloFormulario").textContent = "Nuevo producto"
+    $("nombre").value = ""
+    $("precio_compra").value = ""
+    $("precio_venta").value = ""
+}
+
+function actualizarResumen(lista) {
+    $("resumenTotal").textContent = lista.length
+    $("resumenActivos").textContent = lista.filter(p => p.activo).length
+    $("resumenInactivos").textContent = lista.filter(p => !p.activo).length
+}
+
+function renderTabla(lista) {
+    const tbody = document.querySelector("#tablaProductos tbody")
+    tbody.innerHTML = ""
+
+    lista.forEach(p => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${p.id}</td>
+                <td class="nombre-col">${p.nombre}</td>
+                <td>Q ${Number(p.precio_compra).toFixed(2)}</td>
+                <td>Q ${Number(p.precio_venta).toFixed(2)}</td>
+                <td>
+                    <span class="badge ${p.activo ? 'badge-activo' : 'badge-inactivo'}">
+                        ${p.activo ? "Activo" : "Inactivo"}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-editar" onclick="editarProducto(${p.id})">Editar</button>
+                    <button class="btn btn-danger" onclick="toggleEstado(${p.id})">
+                        ${p.activo ? "Desactivar" : "Activar"}
+                    </button>
+                </td>
+            </tr>
+        `
+    })
+
+    actualizarResumen(lista)
+}
+
+function editarProducto(id) {
+    const p = productosData.find(x => x.id === id)
+    if (!p) return
+
+    productoEditandoId = id
+    $("tituloFormulario").textContent = `Editar producto #${id}`
+    $("nombre").value = p.nombre
+    $("precio_compra").value = p.precio_compra
+    $("precio_venta").value = p.precio_venta
+}
+
+function guardarProducto() {
+    const payload = {
+        nombre: $("nombre").value.trim(),
+        precio_compra: parseFloat($("precio_compra").value || "0"),
+        precio_venta: parseFloat($("precio_venta").value || "0")
+    }
+
+    if (!payload.nombre) {
+        mostrarMensaje("El nombre es obligatorio", "error")
+        return
+    }
+
+    const url = productoEditandoId
+        ? `/api/productos/${productoEditandoId}`
+        : `/api/productos`
+
+    const method = productoEditandoId ? "PUT" : "POST"
+
+    fetch(url, {
+        method: method,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            mostrarMensaje(data.error, "error")
+            return
+        }
+
+        mostrarMensaje(productoEditandoId ? "Producto actualizado correctamente" : "Producto creado correctamente", "ok")
+        setTimeout(() => location.reload(), 900)
+    })
+}
+
+function toggleEstado(id) {
+    fetch(`/api/productos/${id}/estado`, {
+        method: "PATCH"
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            mostrarMensaje(data.error, "error")
+            return
+        }
+
+        mostrarMensaje("Estado del producto actualizado", "ok")
+        setTimeout(() => location.reload(), 700)
+    })
+}
+
+function filtrarTabla() {
+    const texto = $("buscarProducto").value.toLowerCase().trim()
+
+    const filtrados = productosData.filter(p =>
+        p.nombre.toLowerCase().includes(texto)
+    )
+
+    renderTabla(filtrados)
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    productosData = JSON.parse($("productos-data").textContent)
+    renderTabla(productosData)
+
+    $("buscarProducto").addEventListener("keyup", filtrarTabla)
+    $("btnGuardarProducto").addEventListener("click", guardarProducto)
+    $("btnNuevoProducto").addEventListener("click", limpiarFormulario)
+})
+</script>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Ventas{% endblock %}
+
+{% block content %}
+<h1>Ventas</h1>
+
+<div style="margin-bottom: 20px;">
+    /venta/nueva
+        <button style="padding:10px; background:#00a8a8; color:white; border:none;">
+            ➕ Nueva Venta
+        </button>
+    </a>
+</div>
+
+<table style="width:100%; border-collapse: collapse;">
+    <thead>
+        <tr>
+            <th style="border:1px solid #ddd; padding:8px;">ID</th>
+            <th style="border:1px solid #ddd; padding:8px;">Fecha</th>
+            <th style="border:1px solid #ddd; padding:8px;">Cliente</th>
+            <th style="border:1px solid #ddd; padding:8px;">Total</th>
+            <th style="border:1px solid #ddd; padding:8px;">Estado</th>
+            <th style="border:1px solid #ddd; padding:8px;">Canal</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in ventas %}
+        <tr>
+            <td style="border:1px solid #ddd; padding:8px;">{{ v.id }}</td>
+            <td style="border:1px solid #ddd; padding:8px;">{{ v.fecha_hora }}</td>
+            <td style="border:1px solid #ddd; padding:8px;">{{ v.cliente }}</td>
+            <td style="border:1px solid #ddd; padding:8px;">Q {{ "%.2f"|format(v.total) }}</td>
+            <td style="border:1px solid #ddd; padding:8px;">{{ v.estado }}</td>
+            <td style="border:1px solid #ddd; padding:8px;">{{ v.canal }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
