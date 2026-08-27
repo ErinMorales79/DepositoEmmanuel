@@ -2,37 +2,19 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
+from app.auth import get_db, require_login
 from app.models.ruta import Ruta
 from app.models.ruta_detalle import RutaDetalle
 from app.models.producto import Producto
-from fastapi import Request
-
-
-from fastapi import Request
-from fastapi.responses import RedirectResponse
 
 
 router = APIRouter(tags=["DistribucionWeb"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @router.get("/distribucion-admin")
-
 def distribucion_admin(request: Request, db: Session = Depends(get_db)):
-
-    if not request.session.get("user_id"):
-        return RedirectResponse(url="/login", status_code=302)
-
-
+    require_login(request)
 
     ruta_activa = (
         db.query(Ruta)
@@ -49,7 +31,7 @@ def distribucion_admin(request: Request, db: Session = Depends(get_db)):
             db.query(
                 RutaDetalle,
                 Producto.nombre.label("producto_nombre"),
-                Producto.precio_venta.label("precio_venta")
+                Producto.precio_venta.label("precio_venta"),
             )
             .join(Producto, Producto.id == RutaDetalle.producto_id)
             .filter(RutaDetalle.ruta_id == ruta_activa.id)
@@ -57,7 +39,6 @@ def distribucion_admin(request: Request, db: Session = Depends(get_db)):
             .all()
         )
 
-        detalle_ruta_json = []
         for d, producto_nombre, precio_venta in detalle_raw:
             vendido = d.cantidad_salida - d.cantidad_regreso
             precio_unitario = float(precio_venta or 0)
@@ -71,7 +52,7 @@ def distribucion_admin(request: Request, db: Session = Depends(get_db)):
                 "regreso": d.cantidad_regreso,
                 "vendido": vendido,
                 "precio_unitario": precio_unitario,
-                "subtotal_vendido": subtotal_vendido
+                "subtotal_vendido": subtotal_vendido,
             })
 
     productos = (
@@ -85,7 +66,7 @@ def distribucion_admin(request: Request, db: Session = Depends(get_db)):
         {
             "id": p.id,
             "nombre": p.nombre,
-            "precio_venta": float(p.precio_venta or 0)
+            "precio_venta": float(p.precio_venta or 0),
         }
         for p in productos
     ]
@@ -97,6 +78,6 @@ def distribucion_admin(request: Request, db: Session = Depends(get_db)):
             "ruta_activa": ruta_activa,
             "detalle_ruta_json": detalle_ruta_json,
             "productos_json": productos_json,
-            "total_general": total_general
+            "total_general": total_general,
         }
     )

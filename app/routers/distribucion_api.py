@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import func, asc, text
+from datetime import date
 
-from app.database import SessionLocal
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.orm import Session
+from sqlalchemy import func, text
+
+from app.auth import get_db, require_login_api
 from app.models.ruta import Ruta
 from app.models.ruta_detalle import RutaDetalle
 from app.models.producto import Producto
@@ -10,21 +12,9 @@ from app.models.lote import Lote
 from app.models.inventario_lote import InventarioLote
 from app.models.ubicacion_inventario import UbicacionInventario
 from app.models.cuadre_ruta import CuadreRuta
+from app.models.movimiento_inventario import MovimientoInventario
 
 router = APIRouter(prefix="/api/distribucion", tags=["DistribucionAPI"])
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def require_login_api(request: Request):
-    if not request.session.get("user_id"):
-        raise HTTPException(status_code=401, detail="No autenticado")
 
 
 def get_ruta_activa(db: Session):
@@ -45,12 +35,89 @@ def get_ubicacion_id(db: Session, nombre: str):
     return ubicacion.id if ubicacion else None
 
 
+def _fifo_lotes(db: Session, producto_id: int, ubicacion_id: int):
+    return (
+        db.query(Lote)
+        .join(InventarioLote, InventarioLote.lote_id == Lote.id)
+        .filter(
+            Lote.producto_id == producto_id,
+            InventarioLote.ubicacion_id == ubicacion_id,
+            InventarioLote.cantidad > 0,
+        )
+        .order_by(Lote.fecha_vencimiento.asc().nulls_last(), Lote.id.asc())
+        .all()
+    )
+
+
+def _inv(db: Session, lote_id: int, ubicacion_id: int):
+    return (
+        db.query(InventarioLote)
+        .filter(
+            InventarioLote.lote_id == lote_id,
+            InventarioLote.ubicacion_id == ubicacion_id,
+        )
+        .first()
+    )
+
+
+def _sumar_inventario(db: Session, lote_id: int, ubicacion_id: int, cantidad: int):
+    destino = _inv(db, lote_id, ubicacion_id)
+    if destino:
+        destino.cantidad += cantidad
+    else:
+        db.add(InventarioLote(lote_id=lote_id, ubicacion_id=ubicacion_id, cantidad=cantidad))
+
+
+def _mover_fifo(db, producto_id, cantidad, origen_id, destino_id, usuario_id, ref_tipo, ref_id, motivo):
+    """Mueve `cantidad` unidades por FIFO de una ubicación a otra (o a salida si destino_id es None).
+
+    Registra un movimiento_inventario por cada lote afectado.
+    Lanza excepción si no hay existencia suficiente en el origen.
+    """
+    db.flush()  # la sesión usa autoflush=False: asegurar existencias consistentes
+    restante = cantidad
+    for lote in _fifo_lotes(db, producto_id, origen_id):
+        if restante <= 0:
+            break
+
+        inv_origen = _inv(db, lote.id, origen_id)
+        if not inv_origen or inv_origen.cantidad <= 0:
+            continue
+
+        tomado = min(restante, inv_origen.cantidad)
+        inv_origen.cantidad -= tomado
+        restante -= tomado
+
+        if destino_id is not None:
+            _sumar_inventario(db, lote.id, destino_id, tomado)
+
+        db.add(
+            MovimientoInventario(
+                tipo="TRASLADO" if destino_id is not None else "SALIDA",
+                usuario_id=usuario_id,
+                producto_id=producto_id,
+                lote_id=lote.id,
+                ubicacion_origen_id=origen_id,
+                ubicacion_destino_id=destino_id,
+                cantidad=tomado,
+                referencia_tipo=ref_tipo,
+                referencia_id=ref_id,
+                motivo=motivo,
+            )
+        )
+
+    if restante > 0:
+        raise Exception(
+            f"Existencia insuficiente para mover el producto {producto_id} (faltan {restante})"
+        )
+
+
 # ============================================================
 # ABRIR RUTA
 # ============================================================
 @router.post("/abrir")
 def abrir_ruta(request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    usuario_id = require_login_api(request)
 
     try:
         ruta_activa = get_ruta_activa(db)
@@ -65,7 +132,7 @@ def abrir_ruta(request: Request, db: Session = Depends(get_db)):
             return {"error": "No existe ningún camión registrado en la base de datos"}
 
         piloto_id = db.execute(
-            text("SELECT id FROM empleado ORDER BY id ASC LIMIT 1")
+            text("SELECT id FROM empleado WHERE activo = true ORDER BY id ASC LIMIT 1")
         ).scalar()
 
         if not piloto_id:
@@ -74,7 +141,9 @@ def abrir_ruta(request: Request, db: Session = Depends(get_db)):
         ruta = Ruta(
             camion_id=camion_id,
             piloto_id=piloto_id,
-            estado="ABIERTA"
+            creada_por=usuario_id,
+            fecha=date.today(),
+            estado="ABIERTA",
         )
 
         db.add(ruta)
@@ -93,7 +162,7 @@ def abrir_ruta(request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.post("/cargar")
 def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    usuario_id = require_login_api(request)
 
     try:
         ruta = get_ruta_activa(db)
@@ -124,85 +193,26 @@ def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
             .join(Lote, InventarioLote.lote_id == Lote.id)
             .filter(
                 Lote.producto_id == producto_id,
-                InventarioLote.ubicacion_id == bodega_id
+                InventarioLote.ubicacion_id == bodega_id,
             )
             .scalar()
         )
 
-        stock_bodega = int(stock_bodega or 0)
-
-        if cantidad > stock_bodega:
+        if cantidad > int(stock_bodega or 0):
             return {
-                "error": f"No hay suficiente stock en bodega. Disponible: {stock_bodega}, requerido: {cantidad}"
+                "error": f"No hay suficiente stock en bodega. Disponible: {int(stock_bodega or 0)}, requerido: {cantidad}"
             }
 
-        cantidad_por_consumir = cantidad
-
-        lotes = (
-            db.query(Lote)
-            .join(InventarioLote, InventarioLote.lote_id == Lote.id)
-            .filter(
-                Lote.producto_id == producto_id,
-                InventarioLote.ubicacion_id == bodega_id,
-                InventarioLote.cantidad > 0
-            )
-            .order_by(asc(Lote.id))
-            .all()
+        _mover_fifo(
+            db, producto_id, cantidad, bodega_id, camion_id, usuario_id,
+            "RUTA_CARGA", ruta.id, "Carga de camión",
         )
-
-        for lote in lotes:
-            if cantidad_por_consumir <= 0:
-                break
-
-            inv_bodega = (
-                db.query(InventarioLote)
-                .filter(
-                    InventarioLote.lote_id == lote.id,
-                    InventarioLote.ubicacion_id == bodega_id
-                )
-                .first()
-            )
-
-            if not inv_bodega:
-                continue
-
-            if inv_bodega.cantidad >= cantidad_por_consumir:
-                movido = cantidad_por_consumir
-                inv_bodega.cantidad -= cantidad_por_consumir
-                cantidad_por_consumir = 0
-            else:
-                movido = inv_bodega.cantidad
-                cantidad_por_consumir -= inv_bodega.cantidad
-                inv_bodega.cantidad = 0
-
-            inv_camion = (
-                db.query(InventarioLote)
-                .filter(
-                    InventarioLote.lote_id == lote.id,
-                    InventarioLote.ubicacion_id == camion_id
-                )
-                .first()
-            )
-
-            if inv_camion:
-                inv_camion.cantidad += movido
-            else:
-                db.add(
-                    InventarioLote(
-                        lote_id=lote.id,
-                        ubicacion_id=camion_id,
-                        cantidad=movido
-                    )
-                )
-
-        if cantidad_por_consumir > 0:
-            raise Exception("No se pudo completar la carga FIFO")
 
         detalle = (
             db.query(RutaDetalle)
             .filter(
                 RutaDetalle.ruta_id == ruta.id,
-                RutaDetalle.producto_id == producto_id
+                RutaDetalle.producto_id == producto_id,
             )
             .first()
         )
@@ -215,7 +225,7 @@ def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
                     ruta_id=ruta.id,
                     producto_id=producto_id,
                     cantidad_salida=cantidad,
-                    cantidad_regreso=0
+                    cantidad_regreso=0,
                 )
             )
 
@@ -232,12 +242,15 @@ def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.post("/confirmar")
 def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    usuario_id = require_login_api(request)
 
     try:
         ruta = get_ruta_activa(db)
         if not ruta:
             return {"error": "No hay una ruta abierta"}
+
+        if db.query(CuadreRuta).filter(CuadreRuta.ruta_id == ruta.id).first():
+            return {"error": "Esta ruta ya fue confirmada anteriormente"}
 
         efectivo_total = float(data.get("efectivo_total", 0))
         items = data.get("items", [])
@@ -270,7 +283,7 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
                 db.query(RutaDetalle)
                 .filter(
                     RutaDetalle.ruta_id == ruta.id,
-                    RutaDetalle.producto_id == producto_id
+                    RutaDetalle.producto_id == producto_id,
                 )
                 .first()
             )
@@ -288,135 +301,72 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
                     "error": f"La cantidad de vuelta del producto {producto_id} no puede ser menor a la ya registrada ({detalle.cantidad_regreso})"
                 }
 
-            # Diferencia real que se devuelve en este cierre
-            delta_regreso = regreso_final - detalle.cantidad_regreso
-
             producto = db.query(Producto).filter(Producto.id == producto_id).first()
             if not producto:
                 return {"error": f"El producto {producto_id} no existe"}
 
+            delta_regreso = regreso_final - detalle.cantidad_regreso
             vendido_final = detalle.cantidad_salida - regreso_final
             precio_unitario = float(producto.precio_venta or 0)
             total_sistema += vendido_final * precio_unitario
 
-            # SOLO mover a bodega lo que físicamente volvió
+            # 1) Lo que físicamente volvió: CAMION -> BODEGA
             if delta_regreso > 0:
-                stock_camion = (
-                    db.query(func.coalesce(func.sum(InventarioLote.cantidad), 0))
-                    .join(Lote, InventarioLote.lote_id == Lote.id)
-                    .filter(
-                        Lote.producto_id == producto_id,
-                        InventarioLote.ubicacion_id == camion_id
-                    )
-                    .scalar()
+                _mover_fifo(
+                    db, producto_id, delta_regreso, camion_id, bodega_id, usuario_id,
+                    "RUTA_RETORNO", ruta.id, "Regreso a bodega",
                 )
 
-                stock_camion = int(stock_camion or 0)
-
-                if delta_regreso > stock_camion:
-                    return {
-                        "error": f"No hay suficiente stock en camión para devolver del producto {producto_id}. Disponible: {stock_camion}, requerido: {delta_regreso}"
-                    }
-
-                cantidad_por_mover = delta_regreso
-
-                lotes_camion = (
-                    db.query(Lote)
-                    .join(InventarioLote, InventarioLote.lote_id == Lote.id)
-                    .filter(
-                        Lote.producto_id == producto_id,
-                        InventarioLote.ubicacion_id == camion_id,
-                        InventarioLote.cantidad > 0
-                    )
-                    .order_by(asc(Lote.id))
-                    .all()
-                )
-
-                for lote in lotes_camion:
-                    if cantidad_por_mover <= 0:
-                        break
-
-                    inv_camion = (
-                        db.query(InventarioLote)
-                        .filter(
-                            InventarioLote.lote_id == lote.id,
-                            InventarioLote.ubicacion_id == camion_id
-                        )
-                        .first()
-                    )
-
-                    if not inv_camion:
-                        continue
-
-                    if inv_camion.cantidad >= cantidad_por_mover:
-                        movido = cantidad_por_mover
-                        inv_camion.cantidad -= cantidad_por_mover
-                        cantidad_por_mover = 0
-                    else:
-                        movido = inv_camion.cantidad
-                        cantidad_por_mover -= inv_camion.cantidad
-                        inv_camion.cantidad = 0
-
-                    inv_bodega = (
-                        db.query(InventarioLote)
-                        .filter(
-                            InventarioLote.lote_id == lote.id,
-                            InventarioLote.ubicacion_id == bodega_id
-                        )
-                        .first()
-                    )
-
-                    if inv_bodega:
-                        inv_bodega.cantidad += movido
-                    else:
-                        db.add(
-                            InventarioLote(
-                                lote_id=lote.id,
-                                ubicacion_id=bodega_id,
-                                cantidad=movido
-                            )
-                        )
-
-                if cantidad_por_mover > 0:
-                    raise Exception(f"No se pudo completar la devolución FIFO del producto {producto_id}")
-
-            # Guardar la cantidad final de vuelta confirmada
             detalle.cantidad_regreso = regreso_final
 
-        # Después de devolver lo no vendido, el camión debe quedar vacío
-        stock_camion_total = (
+        # 2) Consumir lo vendido desde el CAMION (deja el camión vacío)
+        for item in items:
+            producto_id = int(item.get("producto_id", 0))
+            detalle = (
+                db.query(RutaDetalle)
+                .filter(
+                    RutaDetalle.ruta_id == ruta.id,
+                    RutaDetalle.producto_id == producto_id,
+                )
+                .first()
+            )
+            vendido = detalle.cantidad_salida - detalle.cantidad_regreso
+            if vendido > 0:
+                _mover_fifo(
+                    db, producto_id, vendido, camion_id, None, usuario_id,
+                    "RUTA_VENDIDO", ruta.id, "Vendido en ruta (consolidado)",
+                )
+
+        # Persistir los movimientos pendientes antes de la verificación agregada
+        # (la sesión usa autoflush=False).
+        db.flush()
+
+        # El camión debe quedar vacío
+        stock_camion_total = int(
             db.query(func.coalesce(func.sum(InventarioLote.cantidad), 0))
             .filter(InventarioLote.ubicacion_id == camion_id)
             .scalar()
+            or 0
         )
 
-        stock_camion_total = int(stock_camion_total or 0)
-
         if stock_camion_total > 0:
-            return {
-                "error": f"No se puede cerrar la ruta. Aún quedan {stock_camion_total} unidades en el camión. Debes registrar correctamente la vuelta."
-            }
+            raise Exception(
+                f"No se puede cerrar la ruta. Aún quedan {stock_camion_total} unidades en el camión."
+            )
 
         correlativo = f"RUTA-{ruta.id:04d}"
         diferencia = efectivo_total - total_sistema
 
-        cuadre_existente = (
-            db.query(CuadreRuta)
-            .filter(CuadreRuta.ruta_id == ruta.id)
-            .first()
+        db.add(
+            CuadreRuta(
+                ruta_id=ruta.id,
+                cerrado_por=usuario_id,
+                monto_esperado=total_sistema,
+                monto_recibido=efectivo_total,
+                diferencia=diferencia,
+                observacion=correlativo,
+            )
         )
-
-        if cuadre_existente:
-            return {"error": "Esta ruta ya fue confirmada anteriormente"}
-
-        cuadre = CuadreRuta(
-            ruta_id=ruta.id,
-            correlativo=correlativo,
-            efectivo_total=efectivo_total,
-            total_sistema=total_sistema,
-            diferencia=diferencia
-        )
-        db.add(cuadre)
 
         ruta.estado = "CERRADA"
 
@@ -428,7 +378,7 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
             "correlativo": correlativo,
             "efectivo_total": efectivo_total,
             "total_sistema": total_sistema,
-            "diferencia": diferencia
+            "diferencia": diferencia,
         }
 
     except Exception as e:

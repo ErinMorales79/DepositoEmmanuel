@@ -1,11 +1,19 @@
 from pydantic import BaseModel
-from decimal import Decimal
+
 
 class ProductoBase(BaseModel):
+    codigo_barra: str
     nombre: str
-    precio_venta: float   
-    precio_compra: float  
+    marca_id: int
+    proveedor_id: int
+    unidades_por_fardo: int
+    precio_venta: float
+    precio_compra: float
+    es_retornable: bool
+    requiere_vencimiento: bool
+    stock_minimo: int
     activo: bool
+
 
 class ProductoOut(ProductoBase):
     id: int

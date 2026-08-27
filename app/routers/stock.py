@@ -1,37 +1,25 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.database import SessionLocal
+from app.auth import get_db, require_login_api
 from app.models.producto import Producto
 from app.models.lote import Lote
 from app.models.inventario_lote import InventarioLote
 from app.schemas.stock import StockBodegaOut
 
-from fastapi import Request
-from fastapi.responses import RedirectResponse
-
 router = APIRouter(prefix="/stock", tags=["Stock"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.get("/bodega", response_model=list[StockBodegaOut])
 def stock_bodega(request: Request, db: Session = Depends(get_db)):
-
-    if not request.session.get("user_id"):
-        return RedirectResponse(url="/login", status_code=302)
-
+    require_login_api(request)
 
     resultados = (
         db.query(
             Producto.id.label("producto_id"),
             Producto.nombre.label("producto"),
-            func.sum(InventarioLote.cantidad).label("stock")
+            func.coalesce(func.sum(InventarioLote.cantidad), 0).label("stock"),
         )
         .join(Lote, Lote.producto_id == Producto.id)
         .join(InventarioLote, InventarioLote.lote_id == Lote.id)
@@ -40,4 +28,7 @@ def stock_bodega(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    return resultados
+    return [
+        {"producto_id": r.producto_id, "producto": r.producto, "stock": int(r.stock or 0)}
+        for r in resultados
+    ]

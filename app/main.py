@@ -5,7 +5,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy import text
 
+from app.config import SECRET_KEY
 from app.database import engine
+from app import models  # noqa: F401  (registra todos los modelos/tablas)
+from app.auth import registrar_manejador_redirect
 from app.routers import productos, stock, web, api, distribucion_web, distribucion_api
 from app.routers.auth_web import router as auth_web_router
 
@@ -13,7 +16,9 @@ from app.routers.auth_web import router as auth_web_router
 app = FastAPI(title="Deposito Emmanuel API")
 
 
-app.add_middleware(SessionMiddleware, secret_key="Emmanuel100200")
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+registrar_manejador_redirect(app)
 
 
 templates = Jinja2Templates(directory="app/templates")
@@ -41,6 +46,6 @@ def test_db():
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        return {"db": "Conexión exitosa ✅"}
+        return {"db": "Conexión exitosa"}
     except Exception as e:
         return {"error": str(e)}

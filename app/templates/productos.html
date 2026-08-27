@@ -42,6 +42,26 @@
     background: #fff;
 }
 
+.check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    font-weight: 600;
+    color: #374151;
+}
+
+.check-row input {
+    width: 16px;
+    height: 16px;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
 .btn {
     border: none;
     border-radius: 6px;
@@ -198,6 +218,7 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Código</th>
                         <th>Nombre</th>
                         <th>Compra</th>
                         <th>Venta</th>
@@ -224,11 +245,46 @@
             <label class="campo-label">Nombre</label>
             <input type="text" id="nombre" class="campo" placeholder="Nombre del producto">
 
-            <label class="campo-label">Precio compra</label>
-            <input type="number" id="precio_compra" class="campo" step="0.01" min="0" placeholder="0.00">
+            <label class="campo-label">Código de barra</label>
+            <input type="text" id="codigo_barra" class="campo" placeholder="8 a 14 dígitos" inputmode="numeric">
 
-            <label class="campo-label">Precio venta</label>
-            <input type="number" id="precio_venta" class="campo" step="0.01" min="0" placeholder="0.00">
+            <label class="campo-label">Marca</label>
+            <select id="marca_id" class="campo"></select>
+
+            <label class="campo-label">Proveedor</label>
+            <select id="proveedor_id" class="campo"></select>
+
+            <div class="grid-2">
+                <div>
+                    <label class="campo-label">Unidades por fardo</label>
+                    <input type="number" id="unidades_por_fardo" class="campo" min="1" value="1">
+                </div>
+                <div>
+                    <label class="campo-label">Stock mínimo</label>
+                    <input type="number" id="stock_minimo" class="campo" min="0" value="0">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="campo-label">Precio compra</label>
+                    <input type="number" id="precio_compra" class="campo" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="campo-label">Precio venta</label>
+                    <input type="number" id="precio_venta" class="campo" step="0.01" min="0" placeholder="0.00">
+                </div>
+            </div>
+
+            <label class="check-row">
+                <input type="checkbox" id="requiere_vencimiento" checked>
+                Requiere fecha de vencimiento
+            </label>
+
+            <label class="check-row">
+                <input type="checkbox" id="es_retornable">
+                Envase retornable
+            </label>
 
             <div class="form-actions">
                 <button id="btnGuardarProducto" class="btn btn-primario" style="flex:1;">
@@ -247,8 +303,18 @@
 {{ productos_json | tojson }}
 </script>
 
+<script id="marcas-data" type="application/json">
+{{ marcas_json | tojson }}
+</script>
+
+<script id="proveedores-data" type="application/json">
+{{ proveedores_json | tojson }}
+</script>
+
 <script>
 let productosData = []
+let marcasData = []
+let proveedoresData = []
 let productoEditandoId = null
 
 function $(id) {
@@ -267,15 +333,32 @@ function mostrarMensaje(texto, tipo = "error") {
 
     setTimeout(() => {
         div.classList.add("oculto")
-    }, 3000)
+    }, 3500)
+}
+
+function llenarSelect(select, lista) {
+    select.innerHTML = ""
+    lista.forEach(x => {
+        const opt = document.createElement("option")
+        opt.value = x.id
+        opt.textContent = x.nombre
+        select.appendChild(opt)
+    })
 }
 
 function limpiarFormulario() {
     productoEditandoId = null
     $("tituloFormulario").textContent = "Nuevo producto"
     $("nombre").value = ""
+    $("codigo_barra").value = ""
+    $("unidades_por_fardo").value = "1"
+    $("stock_minimo").value = "0"
     $("precio_compra").value = ""
     $("precio_venta").value = ""
+    $("requiere_vencimiento").checked = true
+    $("es_retornable").checked = false
+    if (marcasData.length) $("marca_id").value = marcasData[0].id
+    if (proveedoresData.length) $("proveedor_id").value = proveedoresData[0].id
 }
 
 function actualizarResumen(lista) {
@@ -289,25 +372,26 @@ function renderTabla(lista) {
     tbody.innerHTML = ""
 
     lista.forEach(p => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${p.id}</td>
-                <td class="nombre-col">${p.nombre}</td>
-                <td>Q ${Number(p.precio_compra).toFixed(2)}</td>
-                <td>Q ${Number(p.precio_venta).toFixed(2)}</td>
-                <td>
-                    <span class="badge ${p.activo ? 'badge-activo' : 'badge-inactivo'}">
-                        ${p.activo ? "Activo" : "Inactivo"}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn btn-editar" onclick="editarProducto(${p.id})">Editar</button>
-                    <button class="btn btn-danger" onclick="toggleEstado(${p.id})">
-                        ${p.activo ? "Desactivar" : "Activar"}
-                    </button>
-                </td>
-            </tr>
+        const tr = document.createElement("tr")
+        tr.innerHTML = `
+            <td>${p.id}</td>
+            <td>${p.codigo_barra}</td>
+            <td class="nombre-col">${p.nombre}</td>
+            <td>Q ${Number(p.precio_compra).toFixed(2)}</td>
+            <td>Q ${Number(p.precio_venta).toFixed(2)}</td>
+            <td>
+                <span class="badge ${p.activo ? 'badge-activo' : 'badge-inactivo'}">
+                    ${p.activo ? "Activo" : "Inactivo"}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-editar" data-editar="${p.id}">Editar</button>
+                <button class="btn btn-danger" data-toggle="${p.id}">
+                    ${p.activo ? "Desactivar" : "Activar"}
+                </button>
+            </td>
         `
+        tbody.appendChild(tr)
     })
 
     actualizarResumen(lista)
@@ -320,19 +404,38 @@ function editarProducto(id) {
     productoEditandoId = id
     $("tituloFormulario").textContent = `Editar producto #${id}`
     $("nombre").value = p.nombre
+    $("codigo_barra").value = p.codigo_barra
+    $("marca_id").value = p.marca_id
+    $("proveedor_id").value = p.proveedor_id
+    $("unidades_por_fardo").value = p.unidades_por_fardo
+    $("stock_minimo").value = p.stock_minimo
     $("precio_compra").value = p.precio_compra
     $("precio_venta").value = p.precio_venta
+    $("requiere_vencimiento").checked = !!p.requiere_vencimiento
+    $("es_retornable").checked = !!p.es_retornable
 }
 
 function guardarProducto() {
     const payload = {
         nombre: $("nombre").value.trim(),
+        codigo_barra: $("codigo_barra").value.trim(),
+        marca_id: parseInt($("marca_id").value || "0"),
+        proveedor_id: parseInt($("proveedor_id").value || "0"),
+        unidades_por_fardo: parseInt($("unidades_por_fardo").value || "0"),
+        stock_minimo: parseInt($("stock_minimo").value || "0"),
         precio_compra: parseFloat($("precio_compra").value || "0"),
-        precio_venta: parseFloat($("precio_venta").value || "0")
+        precio_venta: parseFloat($("precio_venta").value || "0"),
+        requiere_vencimiento: $("requiere_vencimiento").checked,
+        es_retornable: $("es_retornable").checked
     }
 
     if (!payload.nombre) {
         mostrarMensaje("El nombre es obligatorio", "error")
+        return
+    }
+
+    if (!/^[0-9]{8,14}$/.test(payload.codigo_barra)) {
+        mostrarMensaje("El código de barra debe tener entre 8 y 14 dígitos", "error")
         return
     }
 
@@ -344,9 +447,7 @@ function guardarProducto() {
 
     fetch(url, {
         method: method,
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     })
     .then(r => r.json())
@@ -359,12 +460,11 @@ function guardarProducto() {
         mostrarMensaje(productoEditandoId ? "Producto actualizado correctamente" : "Producto creado correctamente", "ok")
         setTimeout(() => location.reload(), 900)
     })
+    .catch(() => mostrarMensaje("Error de red al guardar el producto", "error"))
 }
 
 function toggleEstado(id) {
-    fetch(`/api/productos/${id}/estado`, {
-        method: "PATCH"
-    })
+    fetch(`/api/productos/${id}/estado`, { method: "PATCH" })
     .then(r => r.json())
     .then(data => {
         if (data.error) {
@@ -381,7 +481,8 @@ function filtrarTabla() {
     const texto = $("buscarProducto").value.toLowerCase().trim()
 
     const filtrados = productosData.filter(p =>
-        p.nombre.toLowerCase().includes(texto)
+        p.nombre.toLowerCase().includes(texto) ||
+        String(p.codigo_barra).includes(texto)
     )
 
     renderTabla(filtrados)
@@ -389,11 +490,25 @@ function filtrarTabla() {
 
 document.addEventListener("DOMContentLoaded", () => {
     productosData = JSON.parse($("productos-data").textContent)
+    marcasData = JSON.parse($("marcas-data").textContent)
+    proveedoresData = JSON.parse($("proveedores-data").textContent)
+
+    llenarSelect($("marca_id"), marcasData)
+    llenarSelect($("proveedor_id"), proveedoresData)
+
     renderTabla(productosData)
+    limpiarFormulario()
 
     $("buscarProducto").addEventListener("keyup", filtrarTabla)
     $("btnGuardarProducto").addEventListener("click", guardarProducto)
     $("btnNuevoProducto").addEventListener("click", limpiarFormulario)
+
+    document.querySelector("#tablaProductos tbody").addEventListener("click", (e) => {
+        const editar = e.target.getAttribute("data-editar")
+        const toggle = e.target.getAttribute("data-toggle")
+        if (editar) editarProducto(parseInt(editar))
+        if (toggle) toggleEstado(parseInt(toggle))
+    })
 })
 </script>
 

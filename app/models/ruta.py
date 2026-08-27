@@ -1,16 +1,17 @@
-from sqlalchemy import Column, Integer, DateTime, Enum, ForeignKey
-from datetime import datetime
+from sqlalchemy import Column, BigInteger, Date, Enum, ForeignKey
 from app.database import Base
+
 
 class Ruta(Base):
     __tablename__ = "ruta"
 
-    id = Column(Integer, primary_key=True, index=True)
-    camion_id = Column(Integer, ForeignKey("camion.id"), nullable=False)
-    piloto_id = Column(Integer, ForeignKey("empleado.id"), nullable=False)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    id = Column(BigInteger, primary_key=True, index=True)
+    camion_id = Column(BigInteger, ForeignKey("camion.id"), nullable=False)
+    piloto_id = Column(BigInteger, ForeignKey("empleado.id"), nullable=False)
+    creada_por = Column(BigInteger, ForeignKey("usuario.id"), nullable=False)
+    fecha = Column(Date, nullable=False)
     estado = Column(
-        Enum("ABIERTA", "CERRADA", name="ruta_estado"),
+        Enum("ABIERTA", "CERRADA", name="ruta_estado", create_type=False),
         nullable=False,
-        default="ABIERTA"
+        default="ABIERTA",
     )

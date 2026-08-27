@@ -3,37 +3,24 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.database import SessionLocal
+from app.auth import get_db, require_login
 from app.models.producto import Producto
+from app.models.marca import Marca
 from app.models.lote import Lote
 from app.models.inventario_lote import InventarioLote
 from app.models.venta import Venta
 from app.models.cliente import Cliente
 from app.models.proveedor import Proveedor
 from app.models.compra import Compra
-from fastapi.responses import RedirectResponse
-
 
 
 router = APIRouter(tags=["Web"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @router.get("/dashboard")
 def dashboard(request: Request, db: Session = Depends(get_db)):
-
-    
-
-    if not request.session.get("user_id"):
-        return RedirectResponse(url="/login", status_code=302)
+    require_login(request)
 
     productos = db.query(Producto).filter(Producto.activo == True).all()
 
@@ -71,6 +58,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/ventas")
 def listar_ventas(request: Request, db: Session = Depends(get_db)):
+    require_login(request)
+
     ventas_raw = (
         db.query(Venta, Cliente.nombre.label("cliente_nombre"))
         .join(Cliente, Cliente.id == Venta.cliente_id)
@@ -101,6 +90,8 @@ def listar_ventas(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/venta/nueva")
 def nueva_venta(request: Request, db: Session = Depends(get_db)):
+    require_login(request)
+
     productos = db.query(Producto).filter(Producto.activo == True).all()
     clientes = db.query(Cliente).order_by(Cliente.nombre.asc()).all()
 
@@ -135,30 +126,48 @@ def nueva_venta(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/productos-admin")
 def productos_admin(request: Request, db: Session = Depends(get_db)):
+    require_login(request)
+
     productos = db.query(Producto).order_by(Producto.id.desc()).all()
+    marcas = db.query(Marca).order_by(Marca.nombre.asc()).all()
+    proveedores = db.query(Proveedor).order_by(Proveedor.nombre.asc()).all()
 
     productos_json = [
         {
             "id": p.id,
+            "codigo_barra": p.codigo_barra,
             "nombre": p.nombre,
+            "marca_id": p.marca_id,
+            "proveedor_id": p.proveedor_id,
+            "unidades_por_fardo": int(p.unidades_por_fardo or 1),
             "precio_compra": float(p.precio_compra or 0),
             "precio_venta": float(p.precio_venta or 0),
+            "es_retornable": bool(p.es_retornable),
+            "requiere_vencimiento": bool(p.requiere_vencimiento),
+            "stock_minimo": int(p.stock_minimo or 0),
             "activo": bool(p.activo)
         }
         for p in productos
     ]
 
+    marcas_json = [{"id": m.id, "nombre": m.nombre} for m in marcas]
+    proveedores_json = [{"id": pr.id, "nombre": pr.nombre} for pr in proveedores]
+
     return templates.TemplateResponse(
         request,
         "productos.html",
         {
-            "productos_json": productos_json
+            "productos_json": productos_json,
+            "marcas_json": marcas_json,
+            "proveedores_json": proveedores_json
         }
     )
 
 
 @router.get("/stock-admin")
 def stock_admin(request: Request, db: Session = Depends(get_db)):
+    require_login(request)
+
     stock_resumen_raw = (
         db.query(
             Producto.id.label("producto_id"),
@@ -218,6 +227,8 @@ def stock_admin(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/compras-admin")
 def compras_admin(request: Request, db: Session = Depends(get_db)):
+    require_login(request)
+
     productos = db.query(Producto).filter(Producto.activo == True).order_by(Producto.nombre.asc()).all()
     proveedores = db.query(Proveedor).order_by(Proveedor.nombre.asc()).all()
     compras = db.query(Compra).order_by(Compra.id.desc()).limit(10).all()
