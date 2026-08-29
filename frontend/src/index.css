@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ---- Tema oscuro (por defecto) ---- */
+  :root,
+  .dark {
+    color-scheme: dark;
+
+    --c-app: 143 159 138; /* salvia exterior */
+    --c-surface-0: 15 28 21; /* panel principal */
+    --c-surface-1: 21 35 27; /* tarjetas */
+    --c-surface-2: 28 44 34; /* inputs, chips, hover */
+    --c-ink-1: 241 245 238;
+    --c-ink-2: 147 163 148;
+    --c-ink-3: 107 122 108;
+    --c-accent: 196 239 74; /* lima — rellenos, botones, gráfica */
+    --c-accent-hover: 211 249 107;
+    --c-accent-ink: 16 33 10;
+    --c-brand: 196 239 74; /* lima para texto/íconos */
+    --c-pos: 99 214 142;
+    --c-neg: 239 90 95;
+
+    --c-line: rgba(255, 255, 255, 0.06);
+    --c-line-strong: rgba(255, 255, 255, 0.1);
+    --card-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.02) inset;
+
+    --chart-line: #c4ef4a;
+    --chart-axis: #7c8c7d;
+    --chart-grid: rgba(255, 255, 255, 0.06);
+    --chart-cursor: rgba(255, 255, 255, 0.16);
+
+    --scroll-thumb: #29392e;
+    --scroll-edge: #0f1c15;
+  }
+
+  /* ---- Tema claro ---- */
+  .light {
+    color-scheme: light;
+
+    --c-app: 201 211 193; /* salvia claro */
+    --c-surface-0: 244 247 240; /* panel principal (blanco cálido) */
+    --c-surface-1: 255 255 255; /* tarjetas */
+    --c-surface-2: 236 239 230; /* inputs, chips, hover */
+    --c-ink-1: 22 36 27;
+    --c-ink-2: 86 106 88;
+    --c-ink-3: 122 137 121;
+    --c-accent: 196 239 74; /* misma lima de marca en rellenos */
+    --c-accent-hover: 182 227 58;
+    --c-accent-ink: 16 33 10;
+    --c-brand: 74 122 0; /* oliva-lima legible sobre claro */
+    --c-pos: 31 140 78;
+    --c-neg: 202 45 51;
+
+    --c-line: rgba(16, 33, 10, 0.1);
+    --c-line-strong: rgba(16, 33, 10, 0.16);
+    --card-shadow: 0 1px 2px rgba(16, 33, 10, 0.06), 0 1px 3px rgba(16, 33, 10, 0.04);
+
+    --chart-line: #6f9c14;
+    --chart-axis: #7a8a7b;
+    --chart-grid: rgba(16, 33, 10, 0.08);
+    --chart-cursor: rgba(16, 33, 10, 0.2);
+
+    --scroll-thumb: #cdd6c2;
+    --scroll-edge: #f4f7f0;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-app font-sans text-ink-1 antialiased;
+    font-feature-settings: "ss01", "cv05";
+  }
+
+  /* Cambio de tema instantáneo y uniforme (sin morphing por elemento) */
+  .theme-changing *,
+  .theme-changing *::before,
+  .theme-changing *::after {
+    transition: none !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tightish;
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-label text-ink-2;
+  }
+
+  .card {
+    @apply rounded-card border border-line bg-surface-1 shadow-card;
+  }
+
+  .field {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .field-input {
+    @apply h-10 w-full rounded-control border border-line bg-surface-2 px-3 text-sm text-ink-1
+           outline-none transition placeholder:text-ink-3
+           focus:border-accent/50 focus:ring-2 focus:ring-accent/25;
+  }
+
+  select.field-input {
+    @apply appearance-none bg-[length:16px] bg-[right_0.6rem_center] bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237c8c7d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+
+  .btn {
+    @apply inline-flex h-10 select-none items-center justify-center gap-2 rounded-control border
+           border-line-strong bg-surface-2 px-4 text-sm font-semibold text-ink-1 transition
+           hover:bg-ink-1/[0.06] active:scale-[0.98]
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+  }
+
+  .btn-primary {
+    @apply border-transparent bg-accent text-accent-ink hover:bg-accent-hover;
+  }
+
+  .btn-ghost {
+    @apply border-transparent bg-transparent hover:bg-ink-1/[0.06];
+  }
+
+  .btn-icon {
+    @apply grid h-10 w-10 place-items-center rounded-control border border-line bg-surface-2
+           text-ink-2 transition hover:bg-ink-1/[0.06] hover:text-ink-1;
+  }
+
+  .chip {
+    @apply inline-flex h-8 select-none items-center gap-1.5 rounded-pill border border-line
+           bg-surface-2 px-3 text-[13px] font-semibold text-ink-2 transition;
+  }
+
+  .chip-active {
+    @apply border-transparent bg-accent text-accent-ink;
+  }
+
+  .nav-item {
+    @apply flex h-11 items-center gap-3 rounded-control px-3.5 text-sm font-semibold text-ink-2
+           transition hover:bg-surface-2 hover:text-ink-1;
+  }
+
+  .nav-item-active {
+    @apply bg-surface-2 text-ink-1;
+  }
+
+  .row-hover {
+    @apply transition hover:bg-surface-2;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border: 2px solid var(--scroll-edge);
+  border-radius: 999px;
+}

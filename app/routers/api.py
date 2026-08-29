@@ -41,26 +41,6 @@ def _fifo_lotes(db: Session, producto_id: int, ubicacion_id: int):
 
 
 # ============================================================
-# STOCK
-# ============================================================
-@router.get("/stock/{producto_id}")
-def get_stock(producto_id: int, request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
-
-    stock = (
-        db.query(func.coalesce(func.sum(InventarioLote.cantidad), 0))
-        .join(Lote, InventarioLote.lote_id == Lote.id)
-        .filter(
-            Lote.producto_id == producto_id,
-            InventarioLote.ubicacion_id == UBICACION_BODEGA,
-        )
-        .scalar()
-    )
-
-    return {"stock": int(stock or 0)}
-
-
-# ============================================================
 # CREAR VENTA
 # ============================================================
 @router.post("/venta")
