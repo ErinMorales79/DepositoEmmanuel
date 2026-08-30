@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Backend (uvicorn)",
+      "type": "shell",
+      "command": "${workspaceFolder}/venv/Scripts/python.exe",
+      "args": ["-m", "uvicorn", "app.main:app", "--reload"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "group": "erp", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "Frontend (vite)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "group": "erp", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "Frontend (build)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "ERP: dev (backend + frontend)",
+      "dependsOn": ["Backend (uvicorn)", "Frontend (vite)"],
+      "dependsOrder": "parallel",
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    }
+  ]
+}

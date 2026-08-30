@@ -1,243 +1,168 @@
-
-Sistema de Gestión para Depósito Emmanuel
-
-
-DESCRIPCIÓN GENERAL
-Este proyecto corresponde a un sistema web de gestión para Depósito Emmanuel,
-desarrollado con FastAPI y PostgreSQL. El sistema incluye frontend integrado
-mediante plantillas HTML, por lo que no requiere un servidor frontend separado.
-
-Módulos principales implementados:
-- Dashboard
-- Productos
-- Stock
-- Compras
-- Ventas
-- Distribución / Rutas
-- Inicio de sesión con autenticación básica
-
 ========================================================
-FASE 1 - REQUISITOS PREVIOS
+ SISTEMA DE GESTION - DEPOSITO EMMANUEL
 ========================================================
 
-Antes de ejecutar el proyecto, la computadora debe tener instalado lo siguiente:
+Sistema web para administrar el deposito: inventario,
+compras, ventas, clientes y reportes.
 
-1. Python 3.13
-2. PostgreSQL 18
-3. Visual Studio Code (opcional, recomendado)
-4. pgAdmin 4 (opcional, recomendado para restaurar la base de datos)
+  Backend       : Python + FastAPI     (carpeta app/)
+  Frontend      : React + Vite         (carpeta frontend/)
+  Base de datos : PostgreSQL 18
 
-========================================================
-FASE 2 - RESTAURACIÓN DE LA BASE DE DATOS
-========================================================
+Todo vive en un solo proyecto. El backend expone la API
+(/api/...) y ademas sirve la aplicacion React.
 
-El sistema depende de una base de datos PostgreSQL previamente restaurada.
-Dentro de la entrega se incluye una carpeta con los respaldos necesarios.
-(mas abajo los comandos)
-
-----------------------------------------
-2.1 Usuario de PostgreSQL
-----------------------------------------
-Usuario sugerido:
-postgres
-
-La contraseña de PostgreSQL depende de la instalación local del equipo donde
-se ejecute el proyecto. No se incluye una contraseña de PostgreSQL en la entrega.
-
-Contraseña sugerida: 1234
-
-----------------------------------------
-2.2 Restauración desde archivo .backup (recomendada)
-----------------------------------------
-
-Paso 1: Crear la base de datos
-"C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres DepositoEmmanuel
-
-Paso 2: Restaurar el respaldo .backup
-"C:\Program Files\PostgreSQL\18\bin\pg_restore.exe" -U postgres -d DepositoEmmanuel -v "RUTA_COMPLETA_DEL_ARCHIVO.backup"
-
-----------------------------------------
-2.3 Restauración desde archivo .sql
-----------------------------------------
-
-Paso 1: Crear la base de datos
-"C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres DepositoEmmanuel
-
-Paso 2: Restaurar el respaldo .sql
-"C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d DepositoEmmanuel -f "RUTA_COMPLETA_DEL_ARCHIVO.sql"
-
-----------------------------------------
-2.4 Verificación de la restauración
-----------------------------------------
-Después de restaurar la base de datos, se recomienda verificar en pgAdmin
-que la base exista correctamente y contenga tablas y datos.
-
-Consultas sugeridas:
-SELECT COUNT(*) FROM producto;
-SELECT COUNT(*) FROM compra;
-SELECT COUNT(*) FROM venta;
-SELECT COUNT(*) FROM inventario_lote;
 
 ========================================================
-FASE 3 - PREPARAR EL ENTORNO DEL PROYECTO
+ REQUISITOS (instalar una sola vez)
 ========================================================
 
-----------------------------------------
-3.1 Abrir la carpeta correcta
-----------------------------------------
-Abrir en Visual Studio Code la carpeta raíz del proyecto, por ejemplo:
+  1. Python 3.13
+  2. Node.js 20 o superior
+  3. PostgreSQL 18
 
-DepositoEmmanuel_backend
-
-*Ubicado en esta carpeta haz RUN, si no funciona todo correctamente continua con los siguientes pasos*
-
-----------------------------------------
-3.2 Crear el entorno virtual (si no existe)
-----------------------------------------
-Comando:
-python -m venv venv
-
-----------------------------------------
-3.3 Activar el entorno virtual
-----------------------------------------
-
-En PowerShell:
-venv\Scripts\Activate.ps1
-
-En CMD:
-venv\Scripts\activate
-
-----------------------------------------
-3.4 Instalar dependencias
-----------------------------------------
-Si el proyecto incluye requirements.txt, ejecutar:
-
-pip install -r requirements.txt
-
-En caso de que sea necesario instalar dependencias manualmente, usar:
-
-pip install fastapi uvicorn sqlalchemy jinja2 python-multipart itsdangerous psycopg[binary]
-
-NOTA:
-*Si requirements.txt está presente, es preferible usar solamente:
-pip install -r requirements.txt*
 
 ========================================================
-FASE 4 - EJECUCIÓN DEL SERVIDOR
+ PASO 1 - RESTAURAR LA BASE DE DATOS
 ========================================================
 
-El frontend está integrado dentro del backend, por lo tanto no se necesita
-levantar un servidor frontend aparte.
+Usuario de PostgreSQL: postgres
+Contrasena sugerida  : 1234
 
-----------------------------------------
-4.1 Ejecutar desde terminal
-----------------------------------------
-Ubicarse en la carpeta raíz del proyecto y ejecutar:
+Crear la base y cargar el respaldo (incluido en la
+carpeta "Respaldos"):
 
-uvicorn app.main:app --reload
+  "C:\Program Files\PostgreSQL\18\bin\createdb.exe" -U postgres DepositoEmmanuel
 
-----------------------------------------
-4.2 Ejecutar desde Visual Studio Code
-----------------------------------------
-***El proyecto incluye la configuración launch.json dentro de la carpeta .vscode,
-también se puede ejecutar desde Visual Studio Code con:
+  "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d DepositoEmmanuel -f "RUTA_COMPLETA_DEL_RESPALDO.sql"
 
-- F5
-o
-- Run and Debug
+Si la base ya existe y quieres empezar de cero, primero:
 
-Esto levantará el servidor automáticamente.***
+  "C:\Program Files\PostgreSQL\18\bin\dropdb.exe" -U postgres --force DepositoEmmanuel
 
-----------------------------------------
-4.3 Dirección del servidor
-----------------------------------------
-El sistema corre localmente en:
+Para verificar (opcional):
 
-http://127.0.0.1:8000
+  SELECT COUNT(*) FROM producto;
+  SELECT COUNT(*) FROM venta;
+
 
 ========================================================
-FASE 5 - ACCESO AL SISTEMA
+ PASO 2 - PREPARAR EL PROYECTO (una sola vez)
 ========================================================
 
-----------------------------------------
-5.1 Pantalla inicial
-----------------------------------------
-Al abrir la raíz del sistema:
+Abrir CMD en la carpeta raiz del proyecto.
 
-http://127.0.0.1:8000
+  Backend:
+    python -m venv venv
+    venv\Scripts\activate
+    pip install -r requirements.txt
 
-el sistema redirige automáticamente al login.
+  Frontend:
+    cd frontend
+    npm install
+    cd ..
 
-----------------------------------------
-5.2 Usuario de prueba para ingresar
-----------------------------------------
+Si tu contrasena de PostgreSQL NO es 1234:
+  - Copia el archivo  .env.example  a  .env
+  - Cambia el valor de DB_PASSWORD por la tuya
 
-Usuario:
-admin@depositoemmanuel.com.gt
-
-Contraseña:
-Admin123
 
 ========================================================
-FASE 6 - RUTAS PRINCIPALES DEL SISTEMA
+ PASO 3 - EJECUTAR EL SISTEMA
 ========================================================
 
-Una vez iniciada la sesión, las rutas principales son:
+Antes de nada: PostgreSQL debe estar encendido.
+Hay dos maneras de correrlo.
 
-Dashboard:
-http://127.0.0.1:8000/dashboard
 
-Productos:
-http://127.0.0.1:8000/productos-admin
+----- FORMA A: solo usar el sistema (1 ventana) --------
 
-Compras:
-http://127.0.0.1:8000/compras-admin
+  cd frontend
+  npm run build
+  cd ..
+  venv\Scripts\activate
+  uvicorn app.main:app
 
-Stock:
-http://127.0.0.1:8000/stock-admin
+  Abrir en el navegador:  http://127.0.0.1:8000
 
-Distribución:
-http://127.0.0.1:8000/distribucion-admin
+  (Repetir "npm run build" solo si cambias el frontend.)
 
-========================================================
-FASE 7 - OBSERVACIONES IMPORTANTES
-========================================================
 
-1. El sistema no funcionará correctamente si la base de datos no ha sido
-   restaurada previamente.
+----- FORMA B: desarrollar (2 ventanas, recarga auto) --
 
-2. El frontend forma parte del backend, por lo que no se debe levantar un
-   proyecto frontend por separado.
+  Ventana 1 - backend:
+    venv\Scripts\activate
+    uvicorn app.main:app --reload
 
-3. La contraseña de PostgreSQL depende del equipo local del usuario que ejecuta
-   el sistema.
+  Ventana 2 - frontend:
+    cd frontend
+    npm run dev
 
-4. El usuario y contraseña del sistema incluidos en este README corresponden
-   al acceso interno del proyecto, no al motor PostgreSQL.
+  Abrir en el navegador:  http://localhost:5173
 
-5. Si la ejecución falla, verificar:
-   - que PostgreSQL esté encendido
-   - que la base DepositoEmmanuel exista
-   - que el entorno virtual esté activo
-   - que las dependencias estén instaladas
-   - que el proyecto se ejecute desde la carpeta raíz correcta
 
 ========================================================
-FASE 8 - RESUMEN RÁPIDO DE EJECUCIÓN
+ EJECUTAR DESDE VISUAL STUDIO CODE
 ========================================================
 
-1. Restaurar la base de datos
-2. Activar el entorno virtual
-3. Instalar dependencias
-4. Ejecutar:
-   uvicorn app.main:app --reload
-5. Abrir en navegador:
-   http://127.0.0.1:8000
-6. Iniciar sesión con:
-   admin@depositoemmanuel.com.gt
-   Admin123
-7. Ejecutar el archivo "backup_postgres_dayli" que se encuentra en la carpeta "Respaldos"
+  - Ctrl+Shift+P  ->  "Run Task"  ->
+    "ERP: dev (backend + frontend)"
+    Levanta backend y frontend juntos.
+    Abrir:  http://localhost:5173
+
+  - Tecla F5: levanta SOLO el backend con depurador.
+
 
 ========================================================
-FIN DEL README
+ ACCESO AL SISTEMA
+========================================================
+
+  Usuario   : admin@depositoemmanuel.com.gt
+  Contrasena: Admin123
+
+  (Este usuario es del sistema, NO de PostgreSQL.)
+
+
+========================================================
+ ESTRUCTURA DEL PROYECTO
+========================================================
+
+  app/                Backend (FastAPI)
+  app/routers/        Endpoints de la API (/api/...)
+  app/models/         Tablas mapeadas (SQLAlchemy)
+  frontend/           Aplicacion React
+  frontend/src/       Codigo de la interfaz
+  docs/               Documentacion (modelo ER)
+  venv/               Entorno de Python
+  requirements.txt    Dependencias del backend
+
+  Herramientas utiles (con el sistema corriendo):
+    http://127.0.0.1:8000/test-db   -> prueba la conexion a la BD
+    http://127.0.0.1:8000/docs      -> documentacion de la API
+
+
+========================================================
+ SI ALGO FALLA
+========================================================
+
+  * No inicia sesion / pantallas vacias:
+    Falta levantar el BACKEND. El frontend solo no funciona.
+
+  * "puerto en uso" al arrancar:
+      taskkill /F /IM python.exe
+      taskkill /F /IM node.exe
+    y vuelve a arrancar.
+
+  * La base no responde:
+    Revisar que PostgreSQL este encendido y que exista la
+    base "DepositoEmmanuel". Probar http://127.0.0.1:8000/test-db
+
+  * En FORMA A no se ven los cambios del frontend:
+    Falta correr  npm run build  otra vez.
+
+  * "node" o "npm" no se reconoce:
+    Cerrar y abrir una terminal nueva despues de instalar Node.
+
+========================================================
+ FIN DEL README
 ========================================================
