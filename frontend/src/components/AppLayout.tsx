@@ -1,7 +1,8 @@
-import { Loader2, X } from "lucide-react";
+import { Loader2, ShieldAlert, X } from "lucide-react";
 import { useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth";
+import { moduloDeRuta } from "../permissions";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -22,19 +23,32 @@ export default function AppLayout() {
     return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
   }
 
-  return (
-    <div className="min-h-screen bg-app p-3 sm:p-4 lg:p-6">
-      <div className="mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[1640px] flex-col overflow-hidden rounded-[26px] border border-line bg-surface-0 sm:min-h-[calc(100vh-2rem)] lg:min-h-[calc(100vh-3rem)]">
-        <Topbar onMenu={() => setOpen(true)} />
+  const modulo = moduloDeRuta(loc.pathname);
+  const permitido = usuario.modulos.includes(modulo);
 
-        <div className="grid flex-1 lg:grid-cols-[248px_1fr]">
-          <aside className="hidden border-r border-line lg:block">
-            <Sidebar />
-          </aside>
-          <main className="min-w-0 p-4 sm:p-5 lg:p-6">
+  return (
+    <div className="flex h-screen flex-col overflow-hidden bg-surface-0">
+      <Topbar onMenu={() => setOpen(true)} />
+
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[248px_1fr]">
+        <aside className="hidden overflow-y-auto border-r border-line lg:block">
+          <Sidebar />
+        </aside>
+        <main className="min-w-0 overflow-y-auto p-4 sm:p-5 lg:p-6">
+          {permitido ? (
             <Outlet />
-          </main>
-        </div>
+          ) : (
+            <div className="card flex flex-col items-center gap-3 p-12 text-center">
+              <ShieldAlert size={28} className="text-neg" />
+              <div>
+                <h2 className="text-[15px] font-semibold">Sin acceso a este módulo</h2>
+                <p className="mt-1 text-sm text-ink-2">
+                  Tu rol ({usuario.rol}) no tiene permiso para ver esta sección.
+                </p>
+              </div>
+            </div>
+          )}
+        </main>
       </div>
 
       {open && (

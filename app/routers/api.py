@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 
-from app.auth import get_db, require_login_api
+from app import audit
+from app.auth import get_db, verificar_permiso
+from app.errors import error_generico
 from app.models.inventario_lote import InventarioLote
 from app.models.lote import Lote
 from app.models.venta import Venta
@@ -45,7 +47,7 @@ def _fifo_lotes(db: Session, producto_id: int, ubicacion_id: int):
 # ============================================================
 @router.post("/venta")
 def crear_venta(data: dict, request: Request, db: Session = Depends(get_db)):
-    usuario_id = require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "ventas", escritura=True)
 
     try:
         if "items" not in data or not data["items"]:
@@ -188,11 +190,16 @@ def crear_venta(data: dict, request: Request, db: Session = Depends(get_db)):
 
         db.commit()
 
+        audit.registrar(
+            usuario_id, "CREAR", "venta", venta.id,
+            detalle=f"Venta de mostrador por Q {total:.2f}",
+            despues={"cliente_id": cliente.id, "total": total},
+        )
         return {"ok": True, "venta_id": venta.id}
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)
 
 
 # ============================================================
@@ -266,7 +273,7 @@ def _leer_datos_producto(data: dict, db: Session, producto_id: int | None = None
 
 @router.post("/productos")
 def crear_producto(data: dict, request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "productos", escritura=True)
 
     try:
         valores, error = _leer_datos_producto(data, db)
@@ -278,16 +285,20 @@ def crear_producto(data: dict, request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(producto)
 
+        audit.registrar(
+            usuario_id, "CREAR", "producto", producto.id,
+            detalle=f"Alta de producto: {valores['nombre']}", despues=valores,
+        )
         return {"ok": True, "producto_id": producto.id}
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)
 
 
 @router.put("/productos/{producto_id}")
 def editar_producto(producto_id: int, data: dict, request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "productos", escritura=True)
 
     try:
         producto = db.query(Producto).filter(Producto.id == producto_id).first()
@@ -303,16 +314,20 @@ def editar_producto(producto_id: int, data: dict, request: Request, db: Session 
 
         db.commit()
 
+        audit.registrar(
+            usuario_id, "EDITAR", "producto", producto_id,
+            detalle=f"Edición de producto: {valores['nombre']}", despues=valores,
+        )
         return {"ok": True}
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)
 
 
 @router.patch("/productos/{producto_id}/estado")
 def cambiar_estado_producto(producto_id: int, request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "productos", escritura=True)
 
     try:
         producto = db.query(Producto).filter(Producto.id == producto_id).first()
@@ -322,11 +337,15 @@ def cambiar_estado_producto(producto_id: int, request: Request, db: Session = De
         producto.activo = not bool(producto.activo)
         db.commit()
 
+        audit.registrar(
+            usuario_id, "EDITAR", "producto", producto_id,
+            detalle=f"Producto {'activado' if producto.activo else 'desactivado'}: {producto.nombre}",
+        )
         return {"ok": True, "activo": bool(producto.activo)}
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)
 
 
 # ============================================================
@@ -334,7 +353,7 @@ def cambiar_estado_producto(producto_id: int, request: Request, db: Session = De
 # ============================================================
 @router.post("/compra")
 def crear_compra(data: dict, request: Request, db: Session = Depends(get_db)):
-    usuario_id = require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "compras", escritura=True)
 
     try:
         if "items" not in data or not data["items"]:
@@ -426,8 +445,12 @@ def crear_compra(data: dict, request: Request, db: Session = Depends(get_db)):
 
         db.commit()
 
+        audit.registrar(
+            usuario_id, "CREAR", "compra", compra.id,
+            detalle=f"Compra a {proveedor.nombre} (factura {numero_factura}) por Q {total:.2f}",
+        )
         return {"ok": True, "compra_id": compra.id}
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)

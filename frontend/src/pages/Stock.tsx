@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Card from "../components/Card";
 import PageHeader from "../components/PageHeader";
 import { Async } from "../components/State";
@@ -10,7 +11,13 @@ import { useApi } from "../lib/useApi";
 
 export default function Stock() {
   const q = useApi<StockData>("/stock");
-  const [busca, setBusca] = useState("");
+  const [params] = useSearchParams();
+  const [busca, setBusca] = useState(params.get("q") ?? "");
+
+  useEffect(() => {
+    const p = params.get("q");
+    if (p) setBusca(p);
+  }, [params]);
 
   return (
     <div>

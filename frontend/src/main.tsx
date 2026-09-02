@@ -15,6 +15,7 @@ import Stock from "./pages/Stock";
 import Compras from "./pages/Compras";
 import Ventas from "./pages/Ventas";
 import NuevaVenta from "./pages/NuevaVenta";
+import Clientes from "./pages/Clientes";
 import Distribucion from "./pages/Distribucion";
 import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
       { path: "/compras", element: <Compras /> },
       { path: "/ventas", element: <Ventas /> },
       { path: "/ventas/nueva", element: <NuevaVenta /> },
+      { path: "/clientes", element: <Clientes /> },
       { path: "/distribucion", element: <Distribucion /> },
       { path: "/reportes", element: <Navigate to="/reportes/ventas" replace /> },
       { path: "/reportes/:tipo", element: <Reportes /> },

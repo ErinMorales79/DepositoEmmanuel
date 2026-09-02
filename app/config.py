@@ -50,5 +50,26 @@ DATABASE_URL = os.getenv(
 
 SQL_ECHO = _bool_env("SQL_ECHO", False)
 
+# --- Entorno -----------------------------------------------------------
+# DEBUG=true en desarrollo local. En el negocio se deja en false.
+DEBUG = _bool_env("DEBUG", True)
+
 # --- Sesión / seguridad --------------------------------------------------
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me-Emmanuel100200")
+_SECRET_DEFAULT = "dev-only-change-me-Emmanuel100200"
+SECRET_KEY = os.getenv("SECRET_KEY", _SECRET_DEFAULT)
+
+# Duración de la sesión (segundos). Por defecto 8 horas (una jornada).
+SESSION_MAX_AGE = int(os.getenv("SESSION_MAX_AGE", str(8 * 60 * 60)))
+
+# Marca la cookie de sesión como "Secure" (solo viaja por HTTPS).
+# Actívalo cuando el sistema se sirva por HTTPS.
+COOKIE_SECURE = _bool_env("COOKIE_SECURE", False)
+
+if not DEBUG and SECRET_KEY == _SECRET_DEFAULT:
+    import warnings
+
+    warnings.warn(
+        "SECRET_KEY tiene el valor por defecto en modo producción. "
+        "Genera una clave nueva y ponla en el archivo .env (SECRET_KEY=...).",
+        stacklevel=1,
+    )

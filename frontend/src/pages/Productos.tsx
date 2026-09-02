@@ -1,20 +1,31 @@
 import { Pencil, Power, Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Card from "../components/Card";
 import PageHeader from "../components/PageHeader";
 import ProductoForm from "../components/ProductoForm";
 import { Async } from "../components/State";
 import Tag from "../components/Tag";
+import { useAuth } from "../auth";
 import { api } from "../lib/api";
 import type { Catalogos, Producto } from "../lib/types";
 import { money } from "../lib/format";
 import { useApi } from "../lib/useApi";
 
 export default function Productos() {
+  const { usuario } = useAuth();
+  const soloLectura = (usuario?.solo_lectura ?? []).includes("productos");
+
   const lista = useApi<Producto[]>("/productos");
   const cat = useApi<Catalogos>("/catalogos");
-  const [busca, setBusca] = useState("");
+  const [params] = useSearchParams();
+  const [busca, setBusca] = useState(params.get("q") ?? "");
   const [editando, setEditando] = useState<Producto | null>(null);
+
+  useEffect(() => {
+    const q = params.get("q");
+    if (q) setBusca(q);
+  }, [params]);
 
   async function toggle(id: number) {
     await api.patch(`/productos/${id}/estado`);
@@ -118,22 +129,24 @@ export default function Productos() {
                             </Tag>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex justify-end gap-1">
-                              <button
-                                className="btn-icon h-8 w-8"
-                                aria-label="Editar"
-                                onClick={() => setEditando(p)}
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                className="btn-icon h-8 w-8"
-                                aria-label="Activar/Desactivar"
-                                onClick={() => toggle(p.id)}
-                              >
-                                <Power size={14} />
-                              </button>
-                            </div>
+                            {!soloLectura && (
+                              <div className="flex justify-end gap-1">
+                                <button
+                                  className="btn-icon h-8 w-8"
+                                  aria-label="Editar"
+                                  onClick={() => setEditando(p)}
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                                <button
+                                  className="btn-icon h-8 w-8"
+                                  aria-label="Activar/Desactivar"
+                                  onClick={() => toggle(p.id)}
+                                >
+                                  <Power size={14} />
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -147,19 +160,26 @@ export default function Productos() {
         </Async>
 
         <Card
-          title={editando ? `Editar #${editando.id}` : "Nuevo producto"}
+          title={soloLectura ? "Consulta" : editando ? `Editar #${editando.id}` : "Nuevo producto"}
           bodyClass="p-5 pt-4"
         >
-          <Async q={cat}>
-            {(catalogos) => (
-              <ProductoForm
-                catalogos={catalogos}
-                editando={editando}
-                onSaved={onSaved}
-                onCancel={() => setEditando(null)}
-              />
-            )}
-          </Async>
+          {soloLectura ? (
+            <p className="text-[13px] text-ink-3">
+              Tu rol solo puede consultar productos. Pide a un administrador que
+              registre o edite el catálogo.
+            </p>
+          ) : (
+            <Async q={cat}>
+              {(catalogos) => (
+                <ProductoForm
+                  catalogos={catalogos}
+                  editando={editando}
+                  onSaved={onSaved}
+                  onCancel={() => setEditando(null)}
+                />
+              )}
+            </Async>
+          )}
         </Card>
       </div>
     </div>

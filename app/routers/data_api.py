@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.auth import get_db, require_login_api
+from app.auth import get_db, require_login_api, verificar_permiso
 
 router = APIRouter(prefix="/api", tags=["Datos"])
 
@@ -267,7 +267,7 @@ def stock_producto(producto_id: int, request: Request, db: Session = Depends(get
 # ============================================================
 @router.get("/ventas")
 def ventas(request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    verificar_permiso(request, db, "ventas")
     return _rows(
         db,
         """
@@ -287,7 +287,7 @@ def ventas(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/compras")
 def compras(request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    verificar_permiso(request, db, "compras")
     return _rows(
         db,
         """
@@ -310,7 +310,7 @@ def compras(request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.get("/distribucion")
 def distribucion(request: Request, db: Session = Depends(get_db)):
-    require_login_api(request)
+    verificar_permiso(request, db, "distribucion")
     ruta = _one(
         db,
         """
@@ -365,7 +365,7 @@ def reporte_ventas(
     canal: str = Query("Todos"),
     estado: str = Query("Todos"),
 ):
-    require_login_api(request)
+    verificar_permiso(request, db, "reportes")
     rows = _rows(
         db,
         """
@@ -409,7 +409,7 @@ def reporte_compras(
     proveedor: str = Query("Todos"),
     estado: str = Query("Todos"),
 ):
-    require_login_api(request)
+    verificar_permiso(request, db, "reportes")
     rows = _rows(
         db,
         """
@@ -451,7 +451,7 @@ def reporte_rutas(
     piloto: str = Query("Todos"),
     estado: str = Query("Todos"),
 ):
-    require_login_api(request)
+    verificar_permiso(request, db, "reportes")
     rows = _rows(
         db,
         """

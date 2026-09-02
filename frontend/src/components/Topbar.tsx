@@ -9,13 +9,14 @@ import {
   Settings,
   Sun,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 import { useApi } from "../lib/useApi";
 import type { Resumen } from "../lib/types";
 import { q } from "../lib/format";
 import { useTheme } from "../theme";
+import BuscadorGlobal from "./BuscadorGlobal";
 import Button from "./Button";
 import Logo from "./Logo";
 import StatPill from "./StatPill";
@@ -25,7 +26,19 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
   const { theme, toggle } = useTheme();
   const { usuario, logout } = useAuth();
   const [menu, setMenu] = useState(false);
+  const [buscar, setBuscar] = useState(false);
   const { data: resumen } = useApi<Resumen>("/resumen");
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setBuscar(true);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
 
   async function cerrarSesion() {
     setMenu(false);
@@ -68,7 +81,12 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
           {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        <button className="btn-icon hidden sm:grid" aria-label="Buscar">
+        <button
+          className="btn-icon"
+          aria-label="Buscar en el sistema"
+          title="Buscar (Ctrl+K)"
+          onClick={() => setBuscar(true)}
+        >
           <Search size={18} />
         </button>
 
@@ -107,13 +125,15 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
                   <div className="text-[11px] text-ink-3">{usuario?.email}</div>
                 </div>
                 <div className="my-1 h-px bg-line" />
-                <Link
-                  to="/configuracion"
-                  onClick={() => setMenu(false)}
-                  className="flex items-center gap-2.5 rounded-[9px] px-3 py-2 text-[13px] font-semibold text-ink-2 transition hover:bg-surface-2 hover:text-ink-1"
-                >
-                  <Settings size={15} /> Configuración
-                </Link>
+                {usuario?.modulos.includes("configuracion") && (
+                  <Link
+                    to="/configuracion"
+                    onClick={() => setMenu(false)}
+                    className="flex items-center gap-2.5 rounded-[9px] px-3 py-2 text-[13px] font-semibold text-ink-2 transition hover:bg-surface-2 hover:text-ink-1"
+                  >
+                    <Settings size={15} /> Configuración
+                  </Link>
+                )}
                 <button
                   onClick={cerrarSesion}
                   className="flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2 text-left text-[13px] font-semibold text-neg transition hover:bg-neg/10"
@@ -125,15 +145,19 @@ export default function Topbar({ onMenu }: { onMenu: () => void }) {
           )}
         </div>
 
-        <Button
-          variant="primary"
-          icon={<Plus size={16} strokeWidth={2.5} />}
-          onClick={() => navigate("/ventas/nueva")}
-          className="hidden md:inline-flex"
-        >
-          <span className="hidden lg:inline">Nueva venta</span>
-        </Button>
+        {usuario?.modulos.includes("ventas") && (
+          <Button
+            variant="primary"
+            icon={<Plus size={16} strokeWidth={2.5} />}
+            onClick={() => navigate("/ventas/nueva")}
+            className="hidden md:inline-flex"
+          >
+            <span className="hidden lg:inline">Nueva venta</span>
+          </Button>
+        )}
       </div>
+
+      <BuscadorGlobal open={buscar} onClose={() => setBuscar(false)} />
     </header>
   );
 }

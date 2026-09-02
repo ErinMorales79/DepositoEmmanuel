@@ -8,6 +8,32 @@ export interface Usuario {
   rol: string;
   handle: string;
   iniciales: string;
+  modulos: string[];
+  solo_lectura: string[];
+}
+
+export interface Cliente {
+  id: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  es_ocasional: boolean;
+  creado_en: string;
+  ventas_count: number;
+  ventas_total: number;
+}
+
+export interface ClienteVenta {
+  id: number;
+  fecha: string;
+  total: number;
+  estado: "FINALIZADA" | "ACTIVA" | "ANULADA";
+  canal: "MOSTRADOR" | "MOTO" | "CAMION";
+}
+
+export interface ClienteDetalle {
+  cliente: Omit<Cliente, "ventas_count" | "ventas_total">;
+  ventas: ClienteVenta[];
 }
 
 export interface Resumen {

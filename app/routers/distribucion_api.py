@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 
-from app.auth import get_db, require_login_api
+from app import audit
+from app.auth import get_db, verificar_permiso
+from app.errors import error_generico
 from app.models.ruta import Ruta
 from app.models.ruta_detalle import RutaDetalle
 from app.models.producto import Producto
@@ -13,8 +15,33 @@ from app.models.inventario_lote import InventarioLote
 from app.models.ubicacion_inventario import UbicacionInventario
 from app.models.cuadre_ruta import CuadreRuta
 from app.models.movimiento_inventario import MovimientoInventario
+from app.models.venta import Venta
+from app.models.detalle_venta import DetalleVenta
 
 router = APIRouter(prefix="/api/distribucion", tags=["DistribucionAPI"])
+
+NOMBRE_CLIENTE_RUTA = "Ventas de Ruta"
+
+
+def _cliente_ruta(db: Session) -> int:
+    """Cliente genérico que agrupa la venta consolidada de una ruta cerrada."""
+    row = db.execute(
+        text("SELECT id FROM cliente WHERE nombre = :n"), {"n": NOMBRE_CLIENTE_RUTA}
+    ).first()
+    if row:
+        return int(row[0])
+
+    row = db.execute(
+        text(
+            """
+            INSERT INTO cliente (nombre, direccion, es_ocasional)
+            VALUES (:n, 'Consolidado de ventas en reparto por camión', true)
+            RETURNING id
+            """
+        ),
+        {"n": NOMBRE_CLIENTE_RUTA},
+    ).first()
+    return int(row[0])
 
 
 def get_ruta_activa(db: Session):
@@ -117,7 +144,7 @@ def _mover_fifo(db, producto_id, cantidad, origen_id, destino_id, usuario_id, re
 # ============================================================
 @router.post("/abrir")
 def abrir_ruta(request: Request, db: Session = Depends(get_db)):
-    usuario_id = require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "distribucion", escritura=True)
 
     try:
         ruta_activa = get_ruta_activa(db)
@@ -150,11 +177,15 @@ def abrir_ruta(request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(ruta)
 
+        audit.registrar(
+            usuario_id, "ABRIR", "ruta", ruta.id,
+            detalle=f"Ruta RUTA-{ruta.id:04d} abierta con camión #{camion_id}",
+        )
         return {"ok": True, "ruta_id": ruta.id}
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)
 
 
 # ============================================================
@@ -162,7 +193,7 @@ def abrir_ruta(request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.post("/cargar")
 def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
-    usuario_id = require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "distribucion", escritura=True)
 
     try:
         ruta = get_ruta_activa(db)
@@ -234,7 +265,7 @@ def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)
 
 
 # ============================================================
@@ -242,7 +273,7 @@ def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
 # ============================================================
 @router.post("/confirmar")
 def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
-    usuario_id = require_login_api(request)
+    usuario_id = verificar_permiso(request, db, "distribucion", escritura=True)
 
     try:
         ruta = get_ruta_activa(db)
@@ -268,6 +299,7 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
             return {"error": "No existen ubicaciones BODEGA o CAMION"}
 
         total_sistema = 0
+        lineas_venta: list[dict] = []
 
         for item in items:
             producto_id = int(item.get("producto_id", 0))
@@ -309,6 +341,13 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
             vendido_final = detalle.cantidad_salida - regreso_final
             precio_unitario = float(producto.precio_venta or 0)
             total_sistema += vendido_final * precio_unitario
+
+            if vendido_final > 0:
+                lineas_venta.append({
+                    "producto_id": producto_id,
+                    "cantidad": vendido_final,
+                    "precio_unitario": precio_unitario,
+                })
 
             # 1) Lo que físicamente volvió: CAMION -> BODEGA
             if delta_regreso > 0:
@@ -357,6 +396,34 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
         correlativo = f"RUTA-{ruta.id:04d}"
         diferencia = efectivo_total - total_sistema
 
+        # La ruta se cierra como una venta consolidada (lo vendido durante el
+        # reparto), asociada a la ruta, más el cuadre de caja del chofer.
+        venta_id = None
+        if lineas_venta:
+            venta = Venta(
+                cliente_id=_cliente_ruta(db),
+                usuario_id=usuario_id,
+                ruta_id=ruta.id,
+                estado="FINALIZADA",
+                canal="CAMION",
+                subtotal=total_sistema,
+                total=total_sistema,
+            )
+            db.add(venta)
+            db.flush()
+            venta_id = venta.id
+
+            for linea in lineas_venta:
+                db.add(
+                    DetalleVenta(
+                        venta_id=venta.id,
+                        producto_id=linea["producto_id"],
+                        cantidad=linea["cantidad"],
+                        precio_unitario=linea["precio_unitario"],
+                        subtotal_linea=linea["cantidad"] * linea["precio_unitario"],
+                    )
+                )
+
         db.add(
             CuadreRuta(
                 ruta_id=ruta.id,
@@ -372,6 +439,15 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
 
         db.commit()
 
+        audit.registrar(
+            usuario_id, "CERRAR", "ruta", ruta.id,
+            detalle=(
+                f"Ruta {correlativo} cerrada: sistema Q {total_sistema:.2f}, "
+                f"recibido Q {efectivo_total:.2f}, diferencia Q {diferencia:.2f}"
+            ),
+            despues={"venta_id": venta_id, "total_sistema": total_sistema, "efectivo_total": efectivo_total},
+        )
+
         return {
             "ok": True,
             "mensaje": "Ruta confirmada y cerrada correctamente",
@@ -379,8 +455,9 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
             "efectivo_total": efectivo_total,
             "total_sistema": total_sistema,
             "diferencia": diferencia,
+            "venta_id": venta_id,
         }
 
     except Exception as e:
         db.rollback()
-        return {"error": str(e)}
+        return error_generico(e)

@@ -10,6 +10,7 @@ class Venta(Base):
 
     cliente_id = Column(BigInteger, ForeignKey("cliente.id"), nullable=False)
     usuario_id = Column(BigInteger, ForeignKey("usuario.id"), nullable=False)
+    ruta_id = Column(BigInteger, ForeignKey("ruta.id"), nullable=True)
 
     fecha_hora = Column(DateTime, default=datetime.now)
 

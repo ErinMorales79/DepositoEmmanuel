@@ -1,16 +1,16 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy import text
 
-from app.config import SECRET_KEY
+from app.config import COOKIE_SECURE, DEBUG, SECRET_KEY, SESSION_MAX_AGE
 from app.database import engine
 from app import models  # noqa: F401  (registra todos los modelos/tablas)
 from app.auth import registrar_manejador_redirect
-from app.routers import api, auth_api, data_api, distribucion_api
+from app.routers import api, auth_api, clientes_api, data_api, distribucion_api
 
 # Frontend heredado (plantillas Jinja) + login web. El SPA de React lo reemplaza.
 # Para reactivar el frontend viejo, descomenta:
@@ -18,10 +18,33 @@ from app.routers import api, auth_api, data_api, distribucion_api
 # from app.routers.auth_web import router as auth_web_router
 
 
-app = FastAPI(title="Deposito Emmanuel API")
+app = FastAPI(
+    title="Deposito Emmanuel API",
+    docs_url="/docs" if DEBUG else None,       # Swagger solo en desarrollo
+    redoc_url=None,
+    openapi_url="/openapi.json" if DEBUG else None,
+)
 
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    max_age=SESSION_MAX_AGE,
+    same_site="lax",
+    https_only=COOKIE_SECURE,
+)
 registrar_manejador_redirect(app)
+
+
+@app.middleware("http")
+async def cabeceras_seguridad(request: Request, call_next):
+    resp = await call_next(request)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "same-origin"
+    resp.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    resp.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    return resp
+
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
@@ -29,6 +52,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_api.router)          # /api/auth/*
 app.include_router(data_api.router)          # /api/* (lecturas)
 app.include_router(api.router)               # /api/* (mutaciones)
+app.include_router(clientes_api.router)      # /api/clientes/*
 app.include_router(distribucion_api.router)  # /api/distribucion/*
 # app.include_router(auth_web_router)
 # app.include_router(productos.router)
@@ -44,7 +68,8 @@ def test_db():
             conn.execute(text("SELECT 1"))
         return {"db": "Conexión exitosa"}
     except Exception as e:  # noqa: BLE001
-        return {"error": str(e)}
+        # En producción no se expone el detalle del error.
+        return {"db": "error", "detalle": str(e) if DEBUG else "No se pudo conectar a la base de datos"}
 
 
 # --- Frontend SPA (React compilado) ------------------------------------
