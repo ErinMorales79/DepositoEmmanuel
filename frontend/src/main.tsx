@@ -17,6 +17,7 @@ import Ventas from "./pages/Ventas";
 import NuevaVenta from "./pages/NuevaVenta";
 import Clientes from "./pages/Clientes";
 import Distribucion from "./pages/Distribucion";
+import Contabilidad from "./pages/Contabilidad";
 import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
 import Login from "./pages/Login";
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: "/ventas/nueva", element: <NuevaVenta /> },
       { path: "/clientes", element: <Clientes /> },
       { path: "/distribucion", element: <Distribucion /> },
+      { path: "/contabilidad", element: <Contabilidad /> },
       { path: "/reportes", element: <Navigate to="/reportes/ventas" replace /> },
       { path: "/reportes/:tipo", element: <Reportes /> },
       { path: "/configuracion", element: <Configuracion /> },

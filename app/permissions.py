@@ -5,7 +5,7 @@ Fuente única de la verdad sobre qué módulos ve y qué puede modificar cada ro
 El backend la usa para autorizar cada operación; el frontend recibe la lista
 de módulos permitidos en `/api/auth/me` y filtra el menú y las rutas con eso.
 
-Roles reales en la base: Admin, Cajero, Repartidor, Piloto.
+Roles reales en la base: Admin, Cajero, Repartidor, Piloto, Contador.
 """
 
 # Módulos del sistema (las mismas claves que usa el frontend en las rutas).
@@ -17,6 +17,7 @@ MODULOS = [
     "ventas",
     "clientes",
     "distribucion",
+    "contabilidad",
     "reportes",
     "configuracion",
     "usuarios",
@@ -28,13 +29,17 @@ MODULOS_POR_ROL: dict[str, set[str]] = {
     "Cajero": {"dashboard", "productos", "stock", "ventas", "clientes"},
     "Repartidor": {"dashboard", "stock", "clientes", "distribucion"},
     "Piloto": {"dashboard", "stock", "clientes", "distribucion"},
+    "Contador": {"dashboard", "contabilidad", "reportes", "clientes"},
 }
 
 # Dentro de un módulo visible, ¿en cuáles el rol solo puede consultar (no crear/editar)?
+# El Contador (Jessica) es de solo consulta en todo lo suyo: ve los números pero
+# no da de alta gastos ni nada más — eso lo hace el Admin.
 SOLO_LECTURA_POR_ROL: dict[str, set[str]] = {
     "Cajero": {"productos", "stock"},
     "Repartidor": {"stock", "clientes"},
     "Piloto": {"stock", "clientes"},
+    "Contador": {"contabilidad", "reportes", "clientes"},
 }
 
 # Rol por defecto si la base trae un nombre no contemplado.

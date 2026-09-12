@@ -18,3 +18,9 @@ export const fechaLarga = (d = new Date()): string =>
 export const isoHoy = (): string => new Date().toISOString().slice(0, 10);
 export const isoHace = (dias: number): string =>
   new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10);
+
+/** Primer día del mes en curso — rango por defecto de Contabilidad ("este mes"). */
+export const isoInicioMes = (): string => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+};

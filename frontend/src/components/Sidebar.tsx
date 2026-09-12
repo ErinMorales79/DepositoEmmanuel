@@ -1,5 +1,6 @@
 import {
   Boxes,
+  Calculator,
   LayoutGrid,
   LogOut,
   Package,
@@ -21,6 +22,7 @@ const operacion: Item[] = [
   { to: "/stock", label: "Stock", icon: Boxes, modulo: "stock" },
   { to: "/compras", label: "Compras", icon: ShoppingCart, modulo: "compras" },
   { to: "/ventas", label: "Ventas", icon: ReceiptText, modulo: "ventas" },
+  { to: "/contabilidad", label: "Contabilidad", icon: Calculator, modulo: "contabilidad" },
   { to: "/clientes", label: "Clientes", icon: Users, modulo: "clientes" },
   { to: "/distribucion", label: "Distribución", icon: Truck, modulo: "distribucion" },
 ];

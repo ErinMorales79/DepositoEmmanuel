@@ -22,6 +22,7 @@ from app.models.ruta import Ruta
 from app.models.ruta_detalle import RutaDetalle
 from app.models.cuadre_ruta import CuadreRuta
 from app.models.movimiento_inventario import MovimientoInventario
+from app.models.gasto import Gasto
 
 __all__ = [
     "Marca",
@@ -42,4 +43,5 @@ __all__ = [
     "RutaDetalle",
     "CuadreRuta",
     "MovimientoInventario",
+    "Gasto",
 ]

@@ -10,7 +10,7 @@ from app.config import COOKIE_SECURE, DEBUG, SECRET_KEY, SESSION_MAX_AGE
 from app.database import engine
 from app import models  # noqa: F401  (registra todos los modelos/tablas)
 from app.auth import registrar_manejador_redirect
-from app.routers import api, auth_api, clientes_api, data_api, distribucion_api
+from app.routers import api, auth_api, clientes_api, contabilidad_api, data_api, distribucion_api
 
 # Frontend heredado (plantillas Jinja) + login web. El SPA de React lo reemplaza.
 # Para reactivar el frontend viejo, descomenta:
@@ -53,6 +53,7 @@ app.include_router(auth_api.router)          # /api/auth/*
 app.include_router(data_api.router)          # /api/* (lecturas)
 app.include_router(api.router)               # /api/* (mutaciones)
 app.include_router(clientes_api.router)      # /api/clientes/*
+app.include_router(contabilidad_api.router)  # /api/contabilidad/*
 app.include_router(distribucion_api.router)  # /api/distribucion/*
 # app.include_router(auth_web_router)
 # app.include_router(productos.router)

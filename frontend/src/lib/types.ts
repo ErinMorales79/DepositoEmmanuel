@@ -160,6 +160,56 @@ export interface ReporteCompras {
   por_dia: { label: string; value: number }[];
 }
 
+export type CategoriaGasto = "ALQUILER" | "SUELDOS" | "COMBUSTIBLE" | "LUZ" | "AGUA" | "OTRO";
+
+export interface Gasto {
+  id: number;
+  fecha: string;
+  categoria: CategoriaGasto;
+  descripcion: string;
+  monto: number;
+  numero_factura: string;
+  registrado_por: string;
+}
+
+export interface ContabilidadResumen {
+  rango: { desde: string; hasta: string };
+  ventas: { total: number; count: number };
+  compras: { total: number; count: number };
+  costo_vendido: number;
+  ganancia_bruta: number;
+  margen_bruto_pct: number;
+  gastos_operativos: number;
+  gastos_count: number;
+  utilidad_operativa: number;
+  tasa_sat: number;
+  impuesto_sat: number;
+  utilidad_neta: number;
+  margen_neto_pct: number;
+}
+
+export interface MargenProducto {
+  id: number;
+  nombre: string;
+  precio_compra: number;
+  precio_venta: number;
+  ganancia_unitaria: number;
+  margen_pct: number;
+}
+
+export interface LibroVentas {
+  rango: { desde: string; hasta: string };
+  rows: {
+    id: number;
+    fecha: string;
+    cliente: string;
+    canal: "MOSTRADOR" | "MOTO" | "CAMION";
+    total: number;
+    impuesto: number;
+  }[];
+  resumen: { count: number; total: number; impuesto: number };
+}
+
 export interface ReporteRutas {
   rows: {
     id: number;

@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Boxes,
+  Calculator,
   LayoutGrid,
   Loader2,
   Package,
@@ -35,6 +36,7 @@ const MODULOS: { modulo: string; label: string; to: string; icon: LucideIcon }[]
   { modulo: "compras", label: "Compras", to: "/compras", icon: ShoppingCart },
   { modulo: "ventas", label: "Ventas", to: "/ventas", icon: ReceiptText },
   { modulo: "ventas", label: "Nueva venta", to: "/ventas/nueva", icon: ReceiptText },
+  { modulo: "contabilidad", label: "Contabilidad", to: "/contabilidad", icon: Calculator },
   { modulo: "clientes", label: "Clientes", to: "/clientes", icon: Users },
   { modulo: "distribucion", label: "Distribución", to: "/distribucion", icon: Truck },
   { modulo: "reportes", label: "Reportes de ventas", to: "/reportes/ventas", icon: BarChart3 },
