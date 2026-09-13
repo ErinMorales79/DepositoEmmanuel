@@ -200,7 +200,7 @@ function GastosTab({ qs }: { qs: string }) {
                 Sin gastos registrados en el rango.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-scroll">
                 <table className="w-full min-w-[720px] text-sm">
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-label text-ink-3">
@@ -279,7 +279,7 @@ function MargenesTab() {
     <Async q={q}>
       {(productos) => (
         <Card bodyClass="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-scroll">
             <table className="w-full min-w-[680px] text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-label text-ink-3">
@@ -334,7 +334,7 @@ function LibroVentasTab({ qs }: { qs: string }) {
           </div>
 
           <Card bodyClass="p-0">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto table-scroll">
               <table className="w-full min-w-[680px] text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-label text-ink-3">

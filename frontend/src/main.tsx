@@ -20,6 +20,7 @@ import Distribucion from "./pages/Distribucion";
 import Contabilidad from "./pages/Contabilidad";
 import Reportes from "./pages/Reportes";
 import Configuracion from "./pages/Configuracion";
+import Usuarios from "./pages/Usuarios";
 import Login from "./pages/Login";
 
 const router = createBrowserRouter([
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: "/reportes", element: <Navigate to="/reportes/ventas" replace /> },
       { path: "/reportes/:tipo", element: <Reportes /> },
       { path: "/configuracion", element: <Configuracion /> },
+      { path: "/usuarios", element: <Usuarios /> },
     ],
   },
 ]);

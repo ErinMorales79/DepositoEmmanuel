@@ -10,6 +10,7 @@ import {
   Settings,
   ShoppingCart,
   Truck,
+  UserCog,
   Users,
   X,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const MODULOS: { modulo: string; label: string; to: string; icon: LucideIcon }[]
   { modulo: "reportes", label: "Reportes de ventas", to: "/reportes/ventas", icon: BarChart3 },
   { modulo: "reportes", label: "Reportes de compras", to: "/reportes/compras", icon: BarChart3 },
   { modulo: "reportes", label: "Reportes de rutas", to: "/reportes/rutas", icon: BarChart3 },
+  { modulo: "usuarios", label: "Usuarios", to: "/usuarios", icon: UserCog },
   { modulo: "configuracion", label: "Configuración", to: "/configuracion", icon: Settings },
 ];
 

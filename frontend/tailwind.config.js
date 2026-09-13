@@ -1,11 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
-  darkMode: "selector", // usa la clase .dark en <html>
+  darkMode: "selector", 
   theme: {
     extend: {
       colors: {
-        // Se resuelven desde variables CSS (ver src/index.css .dark / .light)
+        
         app: "rgb(var(--c-app) / <alpha-value>)",
         surface: {
           0: "rgb(var(--c-surface-0) / <alpha-value>)",
@@ -22,7 +22,6 @@ export default {
           hover: "rgb(var(--c-accent-hover) / <alpha-value>)",
           ink: "rgb(var(--c-accent-ink) / <alpha-value>)",
         },
-        // Acento seguro para texto/íconos sobre superficies (adapta en claro)
         brand: "rgb(var(--c-brand) / <alpha-value>)",
         pos: "rgb(var(--c-pos) / <alpha-value>)",
         neg: "rgb(var(--c-neg) / <alpha-value>)",

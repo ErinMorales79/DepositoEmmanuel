@@ -8,6 +8,7 @@ import {
   Settings,
   ShoppingCart,
   Truck,
+  UserCog,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -90,6 +91,17 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       ))}
 
       <div className="my-2 h-px bg-line" />
+
+      {modulos.includes("usuarios") && (
+        <NavLink
+          to="/usuarios"
+          onClick={onNavigate}
+          className={({ isActive }) => `nav-item ${isActive ? "nav-item-active" : ""}`}
+        >
+          <UserCog size={18} strokeWidth={1.75} />
+          Usuarios
+        </NavLink>
+      )}
 
       {modulos.includes("configuracion") && (
         <NavLink

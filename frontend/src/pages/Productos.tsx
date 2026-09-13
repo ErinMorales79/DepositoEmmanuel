@@ -74,7 +74,7 @@ export default function Productos() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto table-scroll">
                 <table className="w-full min-w-[680px] text-sm">
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-label text-ink-3">

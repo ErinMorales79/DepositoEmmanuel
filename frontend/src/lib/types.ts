@@ -160,6 +160,32 @@ export interface ReporteCompras {
   por_dia: { label: string; value: number }[];
 }
 
+export interface Rol {
+  id: number;
+  nombre: string;
+}
+
+export interface UsuarioAdmin {
+  id: number;
+  nombre: string;
+  telefono: string;
+  username: string;
+  email: string;
+  rol: string;
+  rol_id: number | null;
+  activo: boolean;
+  ultimo_acceso: string | null;
+  bloqueado: boolean;
+}
+
+export interface ActividadUsuario {
+  fecha: string;
+  accion: string;
+  entidad: string;
+  registro_id: number | null;
+  detalle: string;
+}
+
 export type CategoriaGasto = "ALQUILER" | "SUELDOS" | "COMBUSTIBLE" | "LUZ" | "AGUA" | "OTRO";
 
 export interface Gasto {

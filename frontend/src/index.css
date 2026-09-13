@@ -161,6 +161,33 @@
   .row-hover {
     @apply transition hover:bg-surface-2;
   }
+
+  /* Tablas anchas en celular: la 1ra columna (identidad de la fila) se queda
+     fija mientras se desliza para ver el resto — así nunca se pierde de vista
+     a quién/qué corresponde cada acción. El degradado del borde avisa que hay
+     más contenido a la derecha (solo hace falta en pantallas angostas). */
+  .table-scroll {
+    position: relative;
+  }
+
+  .table-scroll table th:first-child,
+  .table-scroll table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: rgb(var(--c-surface-1));
+  }
+
+  @media (max-width: 1023px) {
+    .table-scroll::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: 20px;
+      background: linear-gradient(to right, transparent, rgb(var(--c-surface-1) / 0.9));
+      pointer-events: none;
+    }
+  }
 }
 
 ::-webkit-scrollbar {

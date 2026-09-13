@@ -93,7 +93,7 @@ function FilterBar({
 function DataTable({ head, children }: { head: ReactNode; children: ReactNode }) {
   return (
     <Card bodyClass="p-0">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto table-scroll">
         <table className="w-full min-w-[720px] whitespace-nowrap text-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-label text-ink-3">

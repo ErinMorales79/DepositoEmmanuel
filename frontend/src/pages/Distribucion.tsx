@@ -226,7 +226,7 @@ function RutaAbierta({
             El camión aún no tiene carga.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-scroll">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-label text-ink-3">

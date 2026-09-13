@@ -10,6 +10,7 @@ export function moduloDeRuta(pathname: string): string {
   if (pathname.startsWith("/contabilidad")) return "contabilidad";
   if (pathname.startsWith("/reportes")) return "reportes";
   if (pathname.startsWith("/configuracion")) return "configuracion";
+  if (pathname.startsWith("/usuarios")) return "usuarios";
   return "dashboard";
 }
 
