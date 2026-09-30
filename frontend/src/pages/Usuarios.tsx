@@ -20,9 +20,7 @@ import { api } from "../lib/api";
 import type { ActividadUsuario, Rol, UsuarioAdmin } from "../lib/types";
 import { useApi } from "../lib/useApi";
 
-// ============================================================
-// Formulario chico: restablecer contraseña
-// ============================================================
+// --- formulario chico para resetear la contraseña ---
 function ResetPasswordForm({
   usuario,
   onDone,
@@ -84,9 +82,7 @@ function ResetPasswordForm({
   );
 }
 
-// ============================================================
-// Acciones por usuario (compartidas entre la fila de tabla y la tarjeta)
-// ============================================================
+// --- botones de accion (los usa la tabla y tambien la tarjeta) ---
 interface AccionesProps {
   u: UsuarioAdmin;
   expandido: boolean;
@@ -129,8 +125,8 @@ function AccionesIconos({ u, expandido, onEditar, onPassword, onEliminar, onExpa
   );
 }
 
-/** Mismas acciones, con etiqueta de texto — para la tarjeta de celular donde
- * tocar un ícono pelado es más difícil de acertar y de entender de un vistazo. */
+// los mismos botones pero con texto, para la tarjeta de celular
+// (un icono solo es mas dificil de acertar y de entender con el dedo)
 function AccionesBotones({ u, onEditar, onPassword, onEliminar, onToggleEstado, onDesbloquear }: AccionesProps) {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -186,9 +182,7 @@ function Actividad({ usuarioId }: { usuarioId: number }) {
   );
 }
 
-// ============================================================
-// Fila de tabla (escritorio) y tarjeta (celular) — misma info, distinto molde
-// ============================================================
+// --- fila de tabla (compu) y tarjeta (celular), muestran lo mismo distinto ---
 function UsuarioFila({ u, expandido, acciones }: { u: UsuarioAdmin; expandido: boolean; acciones: AccionesProps }) {
   return (
     <>
@@ -260,7 +254,6 @@ function UsuarioCard({ u, expandido, acciones }: { u: UsuarioAdmin; expandido: b
   );
 }
 
-// ============================================================
 export default function Usuarios() {
   const lista = useApi<UsuarioAdmin[]>("/usuarios");
   const roles = useApi<Rol[]>("/usuarios/roles");
@@ -332,7 +325,7 @@ export default function Usuarios() {
 
             return (
               <Card bodyClass="p-0">
-                {/* Escritorio: tabla con 1ra columna fija al deslizar */}
+                {/* en compu: tabla, con la 1ra columna fija al deslizar */}
                 <div className="hidden overflow-x-auto table-scroll lg:block">
                   <table className="w-full min-w-[760px] text-sm">
                     <thead>
@@ -352,7 +345,7 @@ export default function Usuarios() {
                   </table>
                 </div>
 
-                {/* Celular/tablet: tarjetas apiladas, sin scroll horizontal */}
+                {/* en celular: tarjetas apiladas, sin necesidad de deslizar */}
                 <div className="divide-y divide-line lg:hidden">
                   {usuarios.map((u) => (
                     <UsuarioCard key={u.id} u={u} expandido={expandido === u.id} acciones={accionesDe(u)} />

@@ -28,7 +28,7 @@ CODIGO_BARRA_RE = re.compile(r"^[0-9]{8,14}$")
 
 
 def _fifo_lotes(db: Session, producto_id: int, ubicacion_id: int):
-    """Lotes con existencia en una ubicación, ordenados FIFO por vencimiento."""
+    # trae los lotes con stock, del que vence primero al que vence al ultimo
     return (
         db.query(Lote)
         .join(InventarioLote, InventarioLote.lote_id == Lote.id)
@@ -42,9 +42,7 @@ def _fifo_lotes(db: Session, producto_id: int, ubicacion_id: int):
     )
 
 
-# ============================================================
-# CREAR VENTA
-# ============================================================
+# --- crear venta ---
 @router.post("/venta")
 def crear_venta(data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "ventas", escritura=True)
@@ -202,11 +200,9 @@ def crear_venta(data: dict, request: Request, db: Session = Depends(get_db)):
         return error_generico(e)
 
 
-# ============================================================
-# PRODUCTOS
-# ============================================================
+# --- productos ---
 def _leer_datos_producto(data: dict, db: Session, producto_id: int | None = None):
-    """Valida y normaliza el payload de producto. Devuelve (valores, error)."""
+    # revisa que los datos del producto esten bien antes de guardarlo
     nombre = str(data.get("nombre", "")).strip()
     codigo_barra = str(data.get("codigo_barra", "")).strip()
 
@@ -348,9 +344,7 @@ def cambiar_estado_producto(producto_id: int, request: Request, db: Session = De
         return error_generico(e)
 
 
-# ============================================================
-# COMPRAS
-# ============================================================
+# --- compras ---
 @router.post("/compra")
 def crear_compra(data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "compras", escritura=True)
@@ -437,7 +431,7 @@ def crear_compra(data: dict, request: Request, db: Session = Depends(get_db)):
         compra.total = total
         db.flush()
 
-        # Lógica de inventario ya implementada en la base de datos.
+        # esta funcion ya esta en la base de datos y mete el producto al inventario
         db.execute(
             text("SELECT finalizar_compra(:compra_id, :usuario_id)"),
             {"compra_id": compra.id, "usuario_id": usuario.id},

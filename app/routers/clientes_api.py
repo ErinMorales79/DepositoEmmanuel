@@ -1,4 +1,4 @@
-"""Módulo de Clientes: alta, edición, listado e historial de compras."""
+# modulo de clientes: crear, editar, listar y ver su historial de compras
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import text
@@ -21,7 +21,7 @@ def _one(db: Session, sql: str, params: dict | None = None) -> dict | None:
 
 
 def _leer_datos(data: dict):
-    """Valida el payload de cliente. Devuelve (valores, error)."""
+    # revisa que los datos del cliente vengan bien antes de guardarlos
     nombre = str(data.get("nombre", "")).strip()
     direccion = str(data.get("direccion", "")).strip()
     telefono = str(data.get("telefono", "") or "").strip() or None
@@ -42,9 +42,7 @@ def _leer_datos(data: dict):
     }, None
 
 
-# ============================================================
-# LISTAR
-# ============================================================
+# --- listar ---
 @router.get("")
 def listar(request: Request, db: Session = Depends(get_db)):
     verificar_permiso(request, db, "clientes")
@@ -67,9 +65,7 @@ def listar(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ============================================================
-# DETALLE + HISTORIAL DE COMPRAS
-# ============================================================
+# --- ver un cliente y su historial de compras ---
 @router.get("/{cliente_id}")
 def detalle(cliente_id: int, request: Request, db: Session = Depends(get_db)):
     verificar_permiso(request, db, "clientes")
@@ -104,9 +100,7 @@ def detalle(cliente_id: int, request: Request, db: Session = Depends(get_db)):
     return {"cliente": cliente, "ventas": ventas}
 
 
-# ============================================================
-# CREAR
-# ============================================================
+# --- crear ---
 @router.post("")
 def crear(data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "clientes", escritura=True)
@@ -147,9 +141,7 @@ def crear(data: dict, request: Request, db: Session = Depends(get_db)):
         return error_generico(e, "crear cliente")
 
 
-# ============================================================
-# EDITAR
-# ============================================================
+# --- editar ---
 @router.put("/{cliente_id}")
 def editar(cliente_id: int, data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "clientes", escritura=True)
@@ -194,9 +186,7 @@ def editar(cliente_id: int, data: dict, request: Request, db: Session = Depends(
         return error_generico(e, "editar cliente")
 
 
-# ============================================================
-# ELIMINAR (solo si no tiene ventas asociadas)
-# ============================================================
+# --- eliminar (solo si no tiene ventas, si no, se debe desactivar) ---
 @router.delete("/{cliente_id}")
 def eliminar(cliente_id: int, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "clientes", escritura=True)

@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.config import COOKIE_SECURE, DEBUG, SECRET_KEY, SESSION_MAX_AGE
 from app.database import engine
-from app import models  # noqa: F401  (registra todos los modelos/tablas)
+from app import models  # noqa: F401  (esto registra todas las tablas)
 from app.auth import registrar_manejador_redirect
 from app.routers import (
     api,
@@ -20,15 +20,15 @@ from app.routers import (
     usuarios_api,
 )
 
-# Frontend heredado (plantillas Jinja) + login web. El SPA de React lo reemplaza.
-# Para reactivar el frontend viejo, descomenta:
+# esto era el frontend viejo (paginas con Jinja), ya no se usa, ahora es todo React
+# si algun dia se necesita volver a usarlo, descomenta esto:
 # from app.routers import productos, stock, web, distribucion_web
 # from app.routers.auth_web import router as auth_web_router
 
 
 app = FastAPI(
     title="Deposito Emmanuel API",
-    docs_url="/docs" if DEBUG else None,       # Swagger solo en desarrollo
+    docs_url="/docs" if DEBUG else None,       # la documentacion de la API solo se ve en desarrollo
     redoc_url=None,
     openapi_url="/openapi.json" if DEBUG else None,
 )
@@ -56,14 +56,14 @@ async def cabeceras_seguridad(request: Request, call_next):
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# --- API ---------------------------------------------------------------
-app.include_router(auth_api.router)          # /api/auth/*
-app.include_router(data_api.router)          # /api/* (lecturas)
-app.include_router(api.router)               # /api/* (mutaciones)
-app.include_router(clientes_api.router)      # /api/clientes/*
-app.include_router(contabilidad_api.router)  # /api/contabilidad/*
-app.include_router(distribucion_api.router)  # /api/distribucion/*
-app.include_router(usuarios_api.router)      # /api/usuarios/*
+# --- se conectan todas las rutas de la API ---
+app.include_router(auth_api.router)          # login / logout
+app.include_router(data_api.router)          # consultas (leer datos)
+app.include_router(api.router)               # crear / editar datos
+app.include_router(clientes_api.router)      # clientes
+app.include_router(contabilidad_api.router)  # contabilidad
+app.include_router(distribucion_api.router)  # rutas de reparto
+app.include_router(usuarios_api.router)      # usuarios
 # app.include_router(auth_web_router)
 # app.include_router(productos.router)
 # app.include_router(stock.router)
@@ -78,11 +78,11 @@ def test_db():
             conn.execute(text("SELECT 1"))
         return {"db": "Conexión exitosa"}
     except Exception as e:  # noqa: BLE001
-        # En producción no se expone el detalle del error.
+        # en produccion no se muestra el error real, solo en desarrollo
         return {"db": "error", "detalle": str(e) if DEBUG else "No se pudo conectar a la base de datos"}
 
 
-# --- Frontend SPA (React compilado) ------------------------------------
+# --- aqui se sirve el frontend de React ya compilado ---
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 if (FRONTEND_DIST / "assets").is_dir():
@@ -95,16 +95,12 @@ if (FRONTEND_DIST / "assets").is_dir():
 
 @app.get("/{full_path:path}")
 def servir_spa(full_path: str):
-    """Sirve el index.html del SPA para cualquier ruta que no sea de la API.
-
-    React Router resuelve la navegación en el navegador. En desarrollo se
-    usa el servidor de Vite (`npm run dev`, puerto 5173); esta ruta es
-    para producción, donde el backend sirve el build de `frontend/dist`.
-    """
+    # manda el index.html para cualquier ruta que no sea de la API
+    # (React Router se encarga de mostrar la pagina correcta en el navegador)
     if full_path.startswith("api/"):
         return JSONResponse(status_code=404, content={"error": "Endpoint no encontrado"})
 
-    # Archivo estático real dentro de dist/ (favicon.svg, imágenes de /public, …)
+    # si es un archivo real dentro de dist (como el favicon), lo manda tal cual
     if full_path:
         raiz = FRONTEND_DIST.resolve()
         candidato = (raiz / full_path).resolve()

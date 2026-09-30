@@ -3,7 +3,7 @@ interface Bar {
   value: number;
 }
 
-/** Gráfica de barras compacta, sin dependencias. Para los reportes. */
+// grafica de barras chiquita, hecha a mano, para los reportes
 export default function MiniBars({
   data,
   height = 140,

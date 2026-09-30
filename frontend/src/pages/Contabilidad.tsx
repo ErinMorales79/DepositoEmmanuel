@@ -70,9 +70,7 @@ function DateRangeBar({
   );
 }
 
-// ============================================================
-// RESUMEN — responde las 7 preguntas de la propietaria
-// ============================================================
+// --- resumen con las preguntas de la propietaria ---
 function ResumenTab({ qs }: { qs: string }) {
   const q = useApi<ContabilidadResumen>(`/contabilidad/resumen?${qs}`);
 
@@ -155,9 +153,7 @@ function ResumenTab({ qs }: { qs: string }) {
   );
 }
 
-// ============================================================
-// GASTOS — solo Admin escribe, Contador solo consulta
-// ============================================================
+// --- gastos (solo el Admin puede escribir, el Contador solo mira) ---
 const CATEGORIA_LABEL: Record<string, string> = {
   ALQUILER: "Alquiler",
   SUELDOS: "Sueldos",
@@ -269,9 +265,7 @@ function GastosTab({ qs }: { qs: string }) {
   );
 }
 
-// ============================================================
-// MÁRGENES POR PRODUCTO (catálogo completo)
-// ============================================================
+// --- margen de ganancia de cada producto ---
 function MargenesTab() {
   const q = useApi<MargenProducto[]>("/contabilidad/productos");
 
@@ -317,9 +311,7 @@ function MargenesTab() {
   );
 }
 
-// ============================================================
-// LIBRO DE VENTAS (el reporte que pide la contadora)
-// ============================================================
+// --- libro de ventas (lo que pide la contadora) ---
 function LibroVentasTab({ qs }: { qs: string }) {
   const q = useApi<LibroVentas>(`/contabilidad/libro-ventas?${qs}`);
 
@@ -377,7 +369,6 @@ function LibroVentasTab({ qs }: { qs: string }) {
   );
 }
 
-// ============================================================
 export default function Contabilidad() {
   const [tab, setTab] = useState<Tab>("resumen");
   const [desde, setDesde] = useState(isoInicioMes());

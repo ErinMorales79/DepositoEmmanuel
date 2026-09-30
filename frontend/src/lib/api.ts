@@ -16,7 +16,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (res.status === 401) {
-    // Sesión perdida: al login (salvo que ya estemos ahí o comprobando /me)
+    // se perdio la sesion, manda al login (menos si ya estamos ahi)
     if (
       !location.pathname.startsWith("/login") &&
       !path.startsWith("/auth/me")

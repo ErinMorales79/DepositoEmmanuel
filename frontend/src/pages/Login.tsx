@@ -19,7 +19,7 @@ export default function Login() {
 
   const destino = loc.state?.from && loc.state.from !== "/login" ? loc.state.from : "/";
 
-  // Ya hay sesión → adentro
+  // si ya hay sesion iniciada, entra directo
   useEffect(() => {
     if (!loading && usuario) navigate(destino, { replace: true });
   }, [loading, usuario, navigate, destino]);

@@ -1,4 +1,4 @@
-// Formas de las respuestas del backend (/api/*)
+// como vienen los datos que manda el backend (/api/*)
 
 export interface Usuario {
   id: number;

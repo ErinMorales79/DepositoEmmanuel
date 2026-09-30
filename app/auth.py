@@ -1,11 +1,9 @@
-"""
-Dependencias de autenticación y autorización reutilizables.
-
-- `require_login`      -> para vistas web: redirige a /login si no hay sesión.
-- `require_login_api`  -> para endpoints JSON: responde 401 si no hay sesión.
-- `verificar_permiso`  -> 401 si no hay sesión, 403 si el rol no puede usar el módulo.
-- `get_db`             -> sesión de SQLAlchemy por request.
-"""
+# funciones de login y permisos que se reusan en todo el backend
+#
+# - require_login     -> para paginas web: si no hay sesion, redirige a /login
+# - require_login_api -> para la API: si no hay sesion, responde 401
+# - verificar_permiso -> 401 si no hay sesion, 403 si el rol no puede usar ese modulo
+# - get_db            -> abre una conexion a la base de datos por cada peticion
 
 from fastapi import Request, HTTPException
 from fastapi.responses import RedirectResponse
@@ -30,15 +28,14 @@ def get_db():
 
 
 class RedirectException(Exception):
-    """Señala que una vista web debe redirigir en lugar de renderizar."""
-
+    # avisa que hay que redirigir a otra pagina en vez de mostrar la actual
     def __init__(self, url: str, status_code: int = HTTP_302_FOUND):
         self.url = url
         self.status_code = status_code
 
 
 def require_login(request: Request) -> int:
-    """Devuelve el user_id de la sesión o corta con una redirección a /login."""
+    # si no hay sesion iniciada, manda a /login
     user_id = request.session.get("user_id")
     if not user_id:
         raise RedirectException("/login")
@@ -46,7 +43,7 @@ def require_login(request: Request) -> int:
 
 
 def require_login_api(request: Request) -> int:
-    """Devuelve el user_id de la sesión o corta con 401."""
+    # igual que arriba, pero para la API responde un error 401
     user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="No autenticado")
@@ -54,7 +51,7 @@ def require_login_api(request: Request) -> int:
 
 
 def rol_de_usuario(db: Session, usuario_id: int) -> str:
-    """Nombre del rol de un usuario activo (o cadena vacía si no existe)."""
+    # busca el rol del usuario (Admin, Cajero, etc). si no existe, regresa vacio
     row = db.execute(
         text(
             """
@@ -79,11 +76,8 @@ def verificar_permiso(
     modulo: str,
     escritura: bool = False,
 ) -> int:
-    """Valida sesión + permiso del rol sobre un módulo. Devuelve el user_id.
-
-    - 401 si no hay sesión.
-    - 403 si el rol no ve el módulo, o si `escritura=True` y el rol es de solo consulta.
-    """
+    # revisa que haya sesion y que el rol pueda usar ese modulo
+    # 401 = no hay sesion / 403 = el rol no tiene permiso
     uid = require_login_api(request)
     rol = rol_de_usuario(db, uid)
 
@@ -107,7 +101,7 @@ def verificar_permiso(
 
 
 def registrar_manejador_redirect(app) -> None:
-    """Convierte RedirectException en una RedirectResponse real."""
+    # convierte el RedirectException en una redireccion de verdad
 
     @app.exception_handler(RedirectException)
     async def _handler(request: Request, exc: RedirectException):  # noqa: ANN001

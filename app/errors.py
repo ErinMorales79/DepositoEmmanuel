@@ -1,9 +1,6 @@
-"""Manejo uniforme de errores inesperados en los endpoints.
-
-En desarrollo (DEBUG) devuelve el detalle del error para poder depurar.
-En producción devuelve un mensaje genérico y registra el detalle en el log
-del servidor, para no exponer información interna al cliente.
-"""
+# cuando algo falla en un endpoint, esto arma la respuesta de error
+# en desarrollo muestra el error real, en produccion un mensaje generico
+# (el error real siempre se guarda en el log del servidor)
 
 import logging
 

@@ -13,9 +13,7 @@ from app.permissions import modulos_de, SOLO_LECTURA_POR_ROL
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
-# --------------------------------------------------------------------
-# Límite de intentos de inicio de sesión (protección contra fuerza bruta)
-# --------------------------------------------------------------------
+# limite de intentos de login, para que no adivinen la contraseña a la fuerza
 _MAX_INTENTOS = 5
 _VENTANA_SEG = 300  # 5 minutos
 _intentos: dict[str, list[float]] = {}
@@ -27,7 +25,7 @@ def _clave(username: str) -> str:
 
 
 def _bloqueado(username: str) -> int:
-    """Devuelve segundos restantes de bloqueo, o 0 si no está bloqueado."""
+    # si esta bloqueado devuelve cuantos segundos faltan, si no, devuelve 0
     k = _clave(username)
     ahora = time.time()
     with _lock:
@@ -49,7 +47,6 @@ def _limpiar_intentos(username: str) -> None:
         _intentos.pop(_clave(username), None)
 
 
-# --------------------------------------------------------------------
 class LoginIn(BaseModel):
     username: str = Field(min_length=1, max_length=120)
     password: str = Field(min_length=1, max_length=200)

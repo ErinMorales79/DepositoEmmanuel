@@ -24,7 +24,7 @@ NOMBRE_CLIENTE_RUTA = "Ventas de Ruta"
 
 
 def _cliente_ruta(db: Session) -> int:
-    """Cliente genérico que agrupa la venta consolidada de una ruta cerrada."""
+    # cliente generico para agrupar todo lo vendido en la ruta
     row = db.execute(
         text("SELECT id FROM cliente WHERE nombre = :n"), {"n": NOMBRE_CLIENTE_RUTA}
     ).first()
@@ -96,12 +96,9 @@ def _sumar_inventario(db: Session, lote_id: int, ubicacion_id: int, cantidad: in
 
 
 def _mover_fifo(db, producto_id, cantidad, origen_id, destino_id, usuario_id, ref_tipo, ref_id, motivo):
-    """Mueve `cantidad` unidades por FIFO de una ubicación a otra (o a salida si destino_id es None).
-
-    Registra un movimiento_inventario por cada lote afectado.
-    Lanza excepción si no hay existencia suficiente en el origen.
-    """
-    db.flush()  # la sesión usa autoflush=False: asegurar existencias consistentes
+    # mueve la cantidad de un lugar a otro, siempre del lote que vence primero
+    # (si no hay destino, es una salida normal, como una venta)
+    db.flush()  # para que las cantidades esten actualizadas antes de seguir
     restante = cantidad
     for lote in _fifo_lotes(db, producto_id, origen_id):
         if restante <= 0:
@@ -139,9 +136,7 @@ def _mover_fifo(db, producto_id, cantidad, origen_id, destino_id, usuario_id, re
         )
 
 
-# ============================================================
-# ABRIR RUTA
-# ============================================================
+# --- abrir una ruta nueva ---
 @router.post("/abrir")
 def abrir_ruta(request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "distribucion", escritura=True)
@@ -188,9 +183,7 @@ def abrir_ruta(request: Request, db: Session = Depends(get_db)):
         return error_generico(e)
 
 
-# ============================================================
-# CARGAR CAMIÓN
-# ============================================================
+# --- cargar producto al camion ---
 @router.post("/cargar")
 def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "distribucion", escritura=True)
@@ -268,9 +261,7 @@ def cargar_camion(data: dict, request: Request, db: Session = Depends(get_db)):
         return error_generico(e)
 
 
-# ============================================================
-# CONFIRMAR RUTA
-# ============================================================
+# --- confirmar y cerrar la ruta ---
 @router.post("/confirmar")
 def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "distribucion", escritura=True)
@@ -349,7 +340,7 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
                     "precio_unitario": precio_unitario,
                 })
 
-            # 1) Lo que físicamente volvió: CAMION -> BODEGA
+            # lo que regreso de verdad, vuelve del camion a la bodega
             if delta_regreso > 0:
                 _mover_fifo(
                     db, producto_id, delta_regreso, camion_id, bodega_id, usuario_id,
@@ -358,7 +349,7 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
 
             detalle.cantidad_regreso = regreso_final
 
-        # 2) Consumir lo vendido desde el CAMION (deja el camión vacío)
+        # lo que se vendio se descuenta del camion (asi queda en 0)
         for item in items:
             producto_id = int(item.get("producto_id", 0))
             detalle = (
@@ -376,11 +367,10 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
                     "RUTA_VENDIDO", ruta.id, "Vendido en ruta (consolidado)",
                 )
 
-        # Persistir los movimientos pendientes antes de la verificación agregada
-        # (la sesión usa autoflush=False).
+        # guarda los movimientos antes de revisar el total
         db.flush()
 
-        # El camión debe quedar vacío
+        # el camion tiene que quedar en 0, si no, algo no cuadra
         stock_camion_total = int(
             db.query(func.coalesce(func.sum(InventarioLote.cantidad), 0))
             .filter(InventarioLote.ubicacion_id == camion_id)
@@ -396,8 +386,8 @@ def confirmar_ruta(data: dict, request: Request, db: Session = Depends(get_db)):
         correlativo = f"RUTA-{ruta.id:04d}"
         diferencia = efectivo_total - total_sistema
 
-        # La ruta se cierra como una venta consolidada (lo vendido durante el
-        # reparto), asociada a la ruta, más el cuadre de caja del chofer.
+        # se cierra la ruta creando una venta con todo lo que se vendio,
+        # mas el cuadre de caja de lo que entrego el chofer
         venta_id = None
         if lineas_venta:
             venta = Venta(

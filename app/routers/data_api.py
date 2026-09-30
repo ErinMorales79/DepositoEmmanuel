@@ -1,9 +1,5 @@
-"""Endpoints de lectura para el frontend (SPA React).
-
-Todo lo que consume el frontend para *mostrar* datos. Las mutaciones
-(crear venta, compra, producto, operar rutas) viven en `api.py` y
-`distribucion_api.py`.
-"""
+# aqui estan todas las rutas que solo LEEN datos para mostrarlos en pantalla
+# crear/editar datos esta en api.py y distribucion_api.py
 
 from datetime import date, timedelta
 
@@ -15,7 +11,7 @@ from app.auth import get_db, require_login_api, verificar_permiso
 
 router = APIRouter(prefix="/api", tags=["Datos"])
 
-# Rango por defecto de los reportes: últimos 120 días (cubre los datos de ejemplo)
+# si no se manda fecha, los reportes muestran los ultimos 120 dias
 _DESDE = str(date.today() - timedelta(days=120))
 _HASTA = str(date.today())
 
@@ -29,9 +25,7 @@ def _one(db: Session, sql: str, params: dict | None = None) -> dict | None:
     return dict(r) if r else None
 
 
-# ============================================================
-# RESUMEN (píldoras de la barra superior)
-# ============================================================
+# --- resumen para las pildoras de arriba (ventas y compras) ---
 @router.get("/resumen")
 def resumen(request: Request, db: Session = Depends(get_db)):
     require_login_api(request)
@@ -53,9 +47,7 @@ def resumen(request: Request, db: Session = Depends(get_db)):
     return {"ventas": v, "compras": c, "ultima_venta": ultima["f"] if ultima else None}
 
 
-# ============================================================
-# DASHBOARD
-# ============================================================
+# --- datos para el dashboard ---
 @router.get("/dashboard")
 def dashboard(request: Request, db: Session = Depends(get_db)):
     require_login_api(request)
@@ -157,9 +149,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     }
 
 
-# ============================================================
-# CATÁLOGOS (selects de formularios)
-# ============================================================
+# --- catalogos para llenar los selects de los formularios ---
 @router.get("/catalogos")
 def catalogos(request: Request, db: Session = Depends(get_db)):
     require_login_api(request)
@@ -174,9 +164,7 @@ def catalogos(request: Request, db: Session = Depends(get_db)):
     }
 
 
-# ============================================================
-# PRODUCTOS
-# ============================================================
+# --- productos ---
 @router.get("/productos")
 def productos(request: Request, db: Session = Depends(get_db)):
     require_login_api(request)
@@ -206,9 +194,7 @@ def productos(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ============================================================
-# STOCK
-# ============================================================
+# --- stock ---
 @router.get("/stock")
 def stock(request: Request, db: Session = Depends(get_db)):
     require_login_api(request)
@@ -262,9 +248,7 @@ def stock_producto(producto_id: int, request: Request, db: Session = Depends(get
     return {"stock": int(n or 0)}
 
 
-# ============================================================
-# VENTAS / COMPRAS (listas)
-# ============================================================
+# --- listas de ventas y compras ---
 @router.get("/ventas")
 def ventas(request: Request, db: Session = Depends(get_db)):
     verificar_permiso(request, db, "ventas")
@@ -305,9 +289,7 @@ def compras(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ============================================================
-# DISTRIBUCIÓN (ruta activa)
-# ============================================================
+# --- la ruta que esta activa ahorita ---
 @router.get("/distribucion")
 def distribucion(request: Request, db: Session = Depends(get_db)):
     verificar_permiso(request, db, "distribucion")
@@ -344,9 +326,7 @@ def distribucion(request: Request, db: Session = Depends(get_db)):
     return {"ruta_activa": ruta, "detalle": detalle}
 
 
-# ============================================================
-# REPORTES
-# ============================================================
+# --- reportes ---
 def _por_dia(rows: list[dict], campo: str = "total") -> list[dict]:
     agg: dict[str, float] = {}
     for r in rows:

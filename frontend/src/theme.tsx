@@ -47,12 +47,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
-    // Quita el bloqueo de transiciones tras aplicar el nuevo tema
+    // ya se aplico el tema nuevo, deja las transiciones normales otra vez
     const id = requestAnimationFrame(() => root.classList.remove("theme-changing"));
     return () => cancelAnimationFrame(id);
   }, [theme]);
 
-  // Congela las transiciones durante el cambio para que todo conmute a la vez
+  // mientras cambia el tema, congela las transiciones para que cambie todo junto
   const change = useCallback((next: (t: Theme) => Theme) => {
     document.documentElement.classList.add("theme-changing");
     setThemeState(next);
@@ -76,7 +76,7 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-/** Lee los colores de la gráfica de las variables CSS del tema activo. */
+// saca los colores de la grafica segun el tema que este activo
 // eslint-disable-next-line react-refresh/only-export-components
 export function readChartColors() {
   const s = getComputedStyle(document.documentElement);

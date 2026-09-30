@@ -1,4 +1,4 @@
-/** A qué módulo pertenece cada ruta del SPA. Debe reflejar app/permissions.py. */
+// dice a que modulo pertenece cada ruta (tiene que ser igual que app/permissions.py)
 export function moduloDeRuta(pathname: string): string {
   if (pathname === "/") return "dashboard";
   if (pathname.startsWith("/productos")) return "productos";

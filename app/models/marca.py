@@ -7,3 +7,4 @@ class Marca(Base):
 
     id = Column(BigInteger, primary_key=True, index=True)
     nombre = Column(Text, nullable=False, unique=True)
+

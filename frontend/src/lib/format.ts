@@ -5,14 +5,14 @@ const nf = new Intl.NumberFormat("es-GT", {
 
 const nf0 = new Intl.NumberFormat("es-GT");
 
-/** "Q 1,234.50" */
+// da "Q 1,234.50"
 export const q = (n: number): string => `Q ${nf.format(n)}`;
 
-/** "1,234.50" sin símbolo */
+// da "1,234.50" sin el simbolo de quetzal
 export const money = (n: number): string => nf.format(n);
 
-/** "1,234" enteros con separador de miles */
+// da "1,234" solo enteros, con comas
 export const int = (n: number): string => nf0.format(n);
 
-/** "+20%" / "-5%" con signo */
+// da "+20%" o "-5%" con el signo
 export const pct = (n: number): string => `${n > 0 ? "+" : ""}${n}%`;

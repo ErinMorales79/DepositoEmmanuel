@@ -109,7 +109,7 @@ function DataTable({ head, children }: { head: ReactNode; children: ReactNode })
 
 const estadoTone = { FINALIZADA: "pos", ACTIVA: "accent", ANULADA: "neg" } as const;
 
-// --- Ventas ---------------------------------------------------------------
+// --- pestaña de ventas ---
 
 function ReporteVentasView({ cat }: { cat: Catalogos }) {
   const { f, set, reset, qs } = useFiltros({
@@ -221,7 +221,7 @@ function ReporteVentasView({ cat }: { cat: Catalogos }) {
   );
 }
 
-// --- Compras -------------------------------------------------------------
+// --- pestaña de compras ---
 
 function ReporteComprasView({ cat }: { cat: Catalogos }) {
   const { f, set, reset, qs } = useFiltros({ proveedor: "Todos", estado: "Todos" });
@@ -320,7 +320,7 @@ function ReporteComprasView({ cat }: { cat: Catalogos }) {
   );
 }
 
-// --- Rutas -------------------------------------------------------------
+// --- pestaña de rutas ---
 
 function ReporteRutasView() {
   const { f, set, reset, qs } = useFiltros({ estado: "Todos" });
@@ -418,8 +418,6 @@ function ReporteRutasView() {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
 
 export default function Reportes() {
   const { tipo } = useParams();

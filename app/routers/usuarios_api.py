@@ -1,7 +1,6 @@
-"""Módulo Usuarios: alta, edición, activar/desactivar, resetear contraseña,
-desbloqueo de intentos fallidos y bitácora por usuario. Exclusivo de Admin
-(único rol con el módulo "usuarios" en app/permissions.py).
-"""
+# modulo de usuarios: crear, editar, activar/desactivar, resetear contraseña,
+# desbloquear intentos fallidos y ver la bitacora de cada usuario
+# solo el Admin puede usar este modulo
 
 import re
 
@@ -31,7 +30,7 @@ def _one(db: Session, sql: str, params: dict | None = None) -> dict | None:
 
 
 def _es_ultimo_admin_activo(db: Session, usuario_id: int) -> bool:
-    """True si usuario_id es Admin activo y no queda ningún otro Admin activo."""
+    # true si este usuario es Admin y ya no queda ningun otro Admin activo
     row = _one(
         db,
         """
@@ -89,9 +88,7 @@ def _leer_usuario(data: dict, requerir_password: bool):
     }, None
 
 
-# ============================================================
-# LISTAR
-# ============================================================
+# --- listar usuarios ---
 @router.get("")
 def listar(request: Request, db: Session = Depends(get_db)):
     verificar_permiso(request, db, "usuarios")
@@ -145,9 +142,7 @@ def actividad(usuario_id: int, request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ============================================================
-# CREAR
-# ============================================================
+# --- crear usuario ---
 @router.post("")
 def crear(data: dict, request: Request, db: Session = Depends(get_db)):
     admin_id = verificar_permiso(request, db, "usuarios", escritura=True)
@@ -205,9 +200,7 @@ def crear(data: dict, request: Request, db: Session = Depends(get_db)):
         return error_generico(e, "crear usuario")
 
 
-# ============================================================
-# EDITAR
-# ============================================================
+# --- editar usuario ---
 @router.put("/{usuario_id}")
 def editar(usuario_id: int, data: dict, request: Request, db: Session = Depends(get_db)):
     admin_id = verificar_permiso(request, db, "usuarios", escritura=True)
@@ -282,9 +275,7 @@ def editar(usuario_id: int, data: dict, request: Request, db: Session = Depends(
         return error_generico(e, "editar usuario")
 
 
-# ============================================================
-# ACTIVAR / DESACTIVAR
-# ============================================================
+# --- activar o desactivar ---
 @router.patch("/{usuario_id}/estado")
 def cambiar_estado(usuario_id: int, request: Request, db: Session = Depends(get_db)):
     admin_id = verificar_permiso(request, db, "usuarios", escritura=True)
@@ -313,9 +304,7 @@ def cambiar_estado(usuario_id: int, request: Request, db: Session = Depends(get_
         return error_generico(e, "cambiar estado de usuario")
 
 
-# ============================================================
-# RESETEAR CONTRASEÑA
-# ============================================================
+# --- resetear la contraseña ---
 @router.put("/{usuario_id}/password")
 def resetear_password(usuario_id: int, data: dict, request: Request, db: Session = Depends(get_db)):
     admin_id = verificar_permiso(request, db, "usuarios", escritura=True)
@@ -346,9 +335,7 @@ def resetear_password(usuario_id: int, data: dict, request: Request, db: Session
         return error_generico(e, "restablecer contraseña")
 
 
-# ============================================================
-# DESBLOQUEAR (limpia el contador de intentos fallidos de login)
-# ============================================================
+# --- desbloquear (quita el contador de intentos fallidos) ---
 @router.post("/{usuario_id}/desbloquear")
 def desbloquear(usuario_id: int, request: Request, db: Session = Depends(get_db)):
     admin_id = verificar_permiso(request, db, "usuarios", escritura=True)
@@ -365,9 +352,7 @@ def desbloquear(usuario_id: int, request: Request, db: Session = Depends(get_db)
     return {"ok": True}
 
 
-# ============================================================
-# ELIMINAR (solo si no tiene historial de operaciones)
-# ============================================================
+# --- eliminar (solo si nunca ha hecho nada en el sistema) ---
 @router.delete("/{usuario_id}")
 def eliminar(usuario_id: int, request: Request, db: Session = Depends(get_db)):
     admin_id = verificar_permiso(request, db, "usuarios", escritura=True)

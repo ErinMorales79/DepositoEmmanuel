@@ -30,7 +30,7 @@ export function ErrorBox({
   );
 }
 
-/** Envuelve contenido dependiente de `useApi`: muestra spinner / error / datos. */
+// segun como vaya useApi, muestra el spinner, el error, o los datos ya listos
 export function Async<T>({
   q,
   children,

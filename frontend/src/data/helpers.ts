@@ -1,4 +1,4 @@
-/** Saludo según la hora local. */
+// saludo segun la hora (buenos dias, buenas tardes, buenas noches)
 export function saludo(d = new Date()): string {
   const h = d.getHours();
   if (h < 12) return "Buenos días";
@@ -6,7 +6,7 @@ export function saludo(d = new Date()): string {
   return "Buenas noches";
 }
 
-/** "viernes, 28 de agosto" */
+// fecha en texto, ej: "viernes, 28 de agosto"
 export const fechaLarga = (d = new Date()): string =>
   d.toLocaleDateString("es-GT", {
     weekday: "long",
@@ -14,12 +14,12 @@ export const fechaLarga = (d = new Date()): string =>
     month: "long",
   });
 
-/** ISO (YYYY-MM-DD) de hoy y de hace N días — para los rangos de reportes. */
+// fecha de hoy y de hace N dias, para los filtros de fecha de los reportes
 export const isoHoy = (): string => new Date().toISOString().slice(0, 10);
 export const isoHace = (dias: number): string =>
   new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10);
 
-/** Primer día del mes en curso — rango por defecto de Contabilidad ("este mes"). */
+// primer dia del mes actual, para el filtro "este mes" de Contabilidad
 export const isoInicioMes = (): string => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);

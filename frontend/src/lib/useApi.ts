@@ -7,7 +7,7 @@ interface State<T> {
   error: string | null;
 }
 
-/** GET a un endpoint con estado de carga/error y recarga manual. */
+// hace un GET a un endpoint y guarda si esta cargando, si hubo error, y los datos
 export function useApi<T>(path: string | null) {
   const [state, setState] = useState<State<T>>({
     data: null,

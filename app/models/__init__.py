@@ -1,8 +1,5 @@
-"""Importa todos los modelos para que SQLAlchemy resuelva las relaciones/FK.
-
-Importar `app.models` (o cualquier submódulo) deja el metadata completo,
-sin importar el orden en que los routers carguen sus modelos.
-"""
+# aqui se importan todos los modelos, asi sqlalchemy ya los conoce a todos
+# (sin esto, algunas relaciones entre tablas podrian fallar)
 
 from app.models.marca import Marca
 from app.models.proveedor import Proveedor

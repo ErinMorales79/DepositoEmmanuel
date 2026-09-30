@@ -1,14 +1,10 @@
-"""
-Roles y permisos del sistema.
+# aqui se define que modulo puede ver y editar cada rol
+# el backend lo usa para dar o quitar permisos, y el frontend usa
+# la misma lista para armar el menu segun el rol que inicio sesion
+#
+# roles que existen: Admin, Cajero, Repartidor, Piloto, Contador
 
-Fuente única de la verdad sobre qué módulos ve y qué puede modificar cada rol.
-El backend la usa para autorizar cada operación; el frontend recibe la lista
-de módulos permitidos en `/api/auth/me` y filtra el menú y las rutas con eso.
-
-Roles reales en la base: Admin, Cajero, Repartidor, Piloto, Contador.
-"""
-
-# Módulos del sistema (las mismas claves que usa el frontend en las rutas).
+# lista de modulos del sistema
 MODULOS = [
     "dashboard",
     "productos",
@@ -23,7 +19,7 @@ MODULOS = [
     "usuarios",
 ]
 
-# Qué módulos ve cada rol.
+# que modulos puede ver cada rol
 MODULOS_POR_ROL: dict[str, set[str]] = {
     "Admin": set(MODULOS),
     "Cajero": {"dashboard", "productos", "stock", "ventas", "clientes"},
@@ -32,9 +28,8 @@ MODULOS_POR_ROL: dict[str, set[str]] = {
     "Contador": {"dashboard", "contabilidad", "reportes", "clientes"},
 }
 
-# Dentro de un módulo visible, ¿en cuáles el rol solo puede consultar (no crear/editar)?
-# El Contador (Jessica) es de solo consulta en todo lo suyo: ve los números pero
-# no da de alta gastos ni nada más — eso lo hace el Admin.
+# de los modulos que puede ver, en cuales solo puede mirar (sin crear/editar)
+# el Contador (Jessica) solo mira, quien crea y edita es el Admin
 SOLO_LECTURA_POR_ROL: dict[str, set[str]] = {
     "Cajero": {"productos", "stock"},
     "Repartidor": {"stock", "clientes"},
@@ -42,12 +37,12 @@ SOLO_LECTURA_POR_ROL: dict[str, set[str]] = {
     "Contador": {"contabilidad", "reportes", "clientes"},
 }
 
-# Rol por defecto si la base trae un nombre no contemplado.
+# si llega un rol que no esta en la lista, solo ve el dashboard
 _ROL_DEFECTO = {"dashboard"}
 
 
 def modulos_de(rol: str) -> set[str]:
-    """Módulos visibles para un rol."""
+    # devuelve los modulos que puede ver ese rol
     return set(MODULOS_POR_ROL.get(rol, _ROL_DEFECTO))
 
 
@@ -56,7 +51,7 @@ def puede_ver(rol: str, modulo: str) -> bool:
 
 
 def puede_escribir(rol: str, modulo: str) -> bool:
-    """True si el rol puede crear/editar/eliminar dentro del módulo."""
+    # true si el rol puede crear/editar/eliminar en ese modulo
     if not puede_ver(rol, modulo):
         return False
     return modulo not in SOLO_LECTURA_POR_ROL.get(rol, set())

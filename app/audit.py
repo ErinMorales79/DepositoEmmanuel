@@ -1,12 +1,8 @@
-"""Bitácora de auditoría.
-
-Registra en la tabla `bitacora` las operaciones sensibles del sistema
-(inicios de sesión, altas/bajas/ediciones de datos, cierres de ruta, etc.).
-
-Usa su propia sesión de base de datos para no interferir con la transacción
-de la operación principal. Llamar SIEMPRE después de que la operación
-principal haya hecho commit.
-"""
+# guarda en la tabla "bitacora" quien hizo que y cuando
+# (login, crear, editar, eliminar, etc)
+#
+# usa su propia conexion a la base de datos para no afectar la operacion
+# principal. siempre se llama DESPUES de que esa operacion ya hizo commit
 
 import json
 
@@ -24,9 +20,9 @@ def registrar(
     antes: dict | None = None,
     despues: dict | None = None,
 ) -> None:
-    """Inserta una entrada en la bitácora. Nunca lanza excepción."""
+    # guarda una fila en la bitacora. si algo falla, no truena el programa
     if usuario_id is None:
-        return  # bitacora.usuario_id es NOT NULL
+        return  # la tabla bitacora exige un usuario
 
     s = SessionLocal()
     try:

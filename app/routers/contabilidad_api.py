@@ -1,16 +1,10 @@
-"""Módulo Contabilidad: impuesto SAT, ganancia bruta/neta, márgenes y gastos.
-
-Régimen confirmado con la propietaria: PEQUEÑO CONTRIBUYENTE.
-- El impuesto a la SAT es siempre 5% del total vendido, sin importar el
-  margen real de cada producto (así lo declara la contadora, aunque haya
-  productos con 10% de margen o más). No hay crédito fiscal que restar.
-- Los precios de producto (precio_venta, precio_compra) están guardados
-  CON impuesto incluido — precio_compra es el precio literal de la factura
-  del proveedor — así que no se le resta nada antes de calcular márgenes.
-
-Ver docs/contabilidad_sat_briefing.md para el detalle de la investigación
-y las fórmulas.
-"""
+# modulo de contabilidad: impuesto de la SAT, ganancia bruta/neta, margenes y gastos
+#
+# el negocio es Pequeño Contribuyente, entonces el impuesto siempre es
+# 5% de lo vendido (sin importar el margen de cada producto), y los precios
+# ya vienen con impuesto incluido, no hay que restarle nada
+#
+# el detalle de por que se calcula asi esta en docs/contabilidad_sat_briefing.md
 
 from datetime import date
 
@@ -24,7 +18,7 @@ from app.errors import error_generico
 
 router = APIRouter(prefix="/api/contabilidad", tags=["Contabilidad"])
 
-TASA_SAT = 0.05  # Pequeño Contribuyente: 5% fijo sobre ventas totales.
+TASA_SAT = 0.05  # 5% fijo sobre el total vendido
 CATEGORIAS = {"ALQUILER", "SUELDOS", "COMBUSTIBLE", "LUZ", "AGUA", "OTRO"}
 
 
@@ -38,7 +32,7 @@ def _one(db: Session, sql: str, params: dict | None = None) -> dict | None:
 
 
 def _rango(desde: str | None, hasta: str | None) -> dict:
-    """Por defecto, el mes en curso (así se piensan estas preguntas: 'este mes')."""
+    # si no mandan fechas, usa el mes actual completo
     hoy = date.today()
     return {
         "desde": desde or hoy.replace(day=1).isoformat(),
@@ -46,9 +40,7 @@ def _rango(desde: str | None, hasta: str | None) -> dict:
     }
 
 
-# ============================================================
-# RESUMEN — responde las 7 preguntas de la propietaria
-# ============================================================
+# --- resumen: total vendido, gastos, ganancia e impuesto ---
 @router.get("/resumen")
 def resumen(request: Request, db: Session = Depends(get_db), desde: str | None = None, hasta: str | None = None):
     verificar_permiso(request, db, "contabilidad")
@@ -125,9 +117,7 @@ def resumen(request: Request, db: Session = Depends(get_db), desde: str | None =
     }
 
 
-# ============================================================
-# MÁRGENES POR PRODUCTO (catálogo completo, % sobre venta)
-# ============================================================
+# --- margen de ganancia de cada producto ---
 @router.get("/productos")
 def margenes_por_producto(request: Request, db: Session = Depends(get_db)):
     verificar_permiso(request, db, "contabilidad")
@@ -149,9 +139,7 @@ def margenes_por_producto(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# ============================================================
-# LIBRO DE VENTAS (reporte que pide la contadora)
-# ============================================================
+# --- libro de ventas (el reporte que pide la contadora) ---
 @router.get("/libro-ventas")
 def libro_ventas(request: Request, db: Session = Depends(get_db), desde: str | None = None, hasta: str | None = None):
     verificar_permiso(request, db, "contabilidad")
@@ -177,9 +165,7 @@ def libro_ventas(request: Request, db: Session = Depends(get_db), desde: str | N
     return {"rango": r, "rows": filas, "resumen": {"count": len(filas), "total": total, "impuesto": impuesto}}
 
 
-# ============================================================
-# GASTOS OPERATIVOS — CRUD (solo Admin escribe; Contador solo consulta)
-# ============================================================
+# --- gastos del negocio (el Admin puede escribir, el Contador solo mira) ---
 def _leer_gasto(data: dict):
     categoria = str(data.get("categoria", "")).strip().upper()
     descripcion = str(data.get("descripcion", "")).strip()
@@ -233,6 +219,7 @@ def crear_gasto(data: dict, request: Request, db: Session = Depends(get_db)):
     usuario_id = verificar_permiso(request, db, "contabilidad", escritura=True)
 
     try:
+        # revisa que los datos del gasto vengan bien antes de guardarlo
         valores, error = _leer_gasto(data)
         if error:
             return {"error": error}
